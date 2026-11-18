@@ -36,7 +36,7 @@ Every environment is an instance of one stack, named after the environment. `bun
 
 ### example
 
-`examples/account/` is a vertical slice through every layer for both persistence modes: a ledger account with a handler, router, adapter, gate, core, store, infrastructure and integration test. Bootstrapping uses its core as the reference shape.
+`examples/account/` is a vertical slice through every layer of the request pipeline for both persistence modes: a ledger account with a handler, router, adapter, gate, core, store and an integration test that runs them against DynamoDB. Bootstrapping uses its core as the reference shape.
 
 ### commands
 
