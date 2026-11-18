@@ -1,0 +1,5 @@
+{
+  "name": "@<project>/async",
+  "private": true,
+  "type": "module"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@<project>/fitness",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:unit": "bun test"
+  },
+  "dependencies": {
+    "@<project>/core": "workspace:*"
+  }
+}
