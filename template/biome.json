@@ -367,6 +367,7 @@
     },
     {
       "includes": ["core/**"],
+      "plugins": ["./tools/fitness/rules/deterministic-core.grit"],
       "linter": {
         "rules": {
           "style": {
@@ -407,9 +408,15 @@
                 "deniedGlobals": {
                   "Bun": "Bun is dev tooling only. Deployed code runs on Node.js.",
                   "Date": "The core is deterministic. Pass the time in with the command.",
+                  "FinalizationRegistry": "The core is deterministic. Garbage collection timing must not reach a decision.",
+                  "WeakRef": "The core is deterministic. Garbage collection timing must not reach a decision.",
                   "crypto": "The core is deterministic. Pass generated identifiers in with the command.",
                   "fetch": "The core does no I/O. Return a decision and let the gate do the I/O.",
+                  "globalThis": "The core reads no globals. Pass what it needs in with the command.",
+                  "performance": "The core is deterministic. Pass the time in with the command.",
                   "process": "The core reads no environment. Pass config in.",
+                  "queueMicrotask": "The core does no scheduling.",
+                  "setImmediate": "The core does no scheduling.",
                   "setInterval": "The core does no scheduling.",
                   "setTimeout": "The core does no scheduling."
                 }

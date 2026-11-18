@@ -1,3 +1,4 @@
+// if: event-sourcing
 import {
   ConditionalCheckFailedException,
   TransactionCanceledException,
@@ -167,3 +168,4 @@ export const createDynamoDbEventLog = <Event>(
 
   return { read, append };
 };
+// end

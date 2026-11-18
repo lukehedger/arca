@@ -1,3 +1,4 @@
+// if: crud
 import { createInMemoryRecordStore, type RecordStore } from '@<project>/store';
 import { describe, expect, test } from 'bun:test';
 import { createRecordGate, type Transition } from '../src/index.ts';
@@ -8,6 +9,8 @@ type CounterCommand =
   | { readonly type: 'increment'; readonly by: number }
   | { readonly type: 'close' };
 type CounterRejection = { readonly reason: 'already_opened' | 'not_open' };
+
+const COUNT_LIMIT = 10;
 
 const decide = (
   current: Counter | undefined,
@@ -23,10 +26,10 @@ const decide = (
     return { outcome: 'rejected', rejection: { reason: 'not_open' } };
   }
   if (command.type === 'increment') {
-    return {
-      outcome: 'approved',
-      state: { ...current, count: current.count + command.by },
-    };
+    const count = current.count + command.by;
+    // Stands in for a core assertion on the state the transition produces.
+    if (count > COUNT_LIMIT) throw new Error('Count is over the limit');
+    return { outcome: 'approved', state: { ...current, count } };
   }
   return { outcome: 'approved', state: { ...current, status: 'closed' } };
 };
@@ -68,6 +71,23 @@ describe('record gate', () => {
       rejection: { reason: 'not_open' },
     });
     expect(await recordStore.read('counter-1')).toBeUndefined();
+  });
+
+  test('writes nothing when the transition fails an assertion', async () => {
+    const recordStore = createInMemoryRecordStore<Counter>({ clock });
+    const gate = createGate(recordStore);
+    await gate.apply({ id: 'counter-1', command: { type: 'open' } });
+
+    const result = gate.apply({
+      id: 'counter-1',
+      command: { type: 'increment', by: COUNT_LIMIT + 1 },
+    });
+
+    await expect(result).rejects.toThrow('Count is over the limit');
+    expect(await recordStore.read('counter-1')).toMatchObject({
+      version: 1,
+      value: { status: 'open', count: 0 },
+    });
   });
 
   test('rejects a repeated create through the core', async () => {
@@ -126,3 +146,4 @@ describe('record gate', () => {
     expect(await createGate(recordStore).load('counter-1')).toBeUndefined();
   });
 });
+// end

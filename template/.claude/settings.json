@@ -2,6 +2,6 @@
   "agent": "wren",
   "statusLine": {
     "type": "command",
-    "command": "bun \"$(git rev-parse --show-toplevel)/tools/status-line/scripts/status-line.ts\""
+    "command": "bun \"$(git rev-parse --show-toplevel)/<app-root>/tools/status-line/scripts/status-line.ts\""
   }
 }

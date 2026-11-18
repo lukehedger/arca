@@ -1,3 +1,4 @@
+// if: crud
 export type StatusRecord = { readonly status: string };
 
 export type StoredRecord<Value extends StatusRecord> = {
@@ -41,6 +42,7 @@ export const createInMemoryRecordStore = <Value extends StatusRecord>(
     value: Value,
     expected: ExpectedRecord,
   ): Promise<WriteResult> => {
+    // Nothing awaits between this check and the write, so concurrent writes cannot both pass it.
     const current = records.get(id);
     const isExpected =
       current?.value.status === expected?.status &&
@@ -55,3 +57,4 @@ export const createInMemoryRecordStore = <Value extends StatusRecord>(
 
   return { read, write };
 };
+// end

@@ -9,7 +9,9 @@ This repository holds two implementations. The new implementation lives in `<app
 
 **[MUST]** Write new work only inside `<app-dir>/`. Only modify files outside it when the user explicitly asks. Reading them as a reference for existing behaviour needs no request.
 
-Paths and commands in this file, ARCHITECTURE.md and DOMAIN.md are relative to `<app-dir>/`. The repository root in these documents means `<app-dir>/`.
+Paths and commands in this file, ARCHITECTURE.md and DOMAIN.md are relative to `<app-dir>/`. The repository root in these documents means `<app-dir>/`. Open Claude Code in `<app-dir>/`, so it loads the agent, settings, rules and commands in `<app-dir>/.claude/`.
+
+The one exception is `.github/`. GitHub reads workflows, CODEOWNERS and the PR template only at the top of the repository, so they live there. The workflows for this implementation are `.github/workflows/<app-dir>-*.yml`. They run from `<app-dir>/` and trigger only on changes inside it.
 
 [docs/migration-plan.md](docs/migration-plan.md) holds the assessment of the previous implementation and the plan to replace it.
 <!-- end -->
@@ -32,9 +34,11 @@ Each invocation emits exactly one structured log line that carries all the conte
 
 **[MUST]** When you change `core/`, also run `bun mutation`. Add tests until it passes.
 
+**[SHOULD]** When you change the shell or `infra/`, also run the integration tests in a disposable environment. `bun env:deploy` deploys a stack named after the current branch, `bun env:test` runs the integration tests against it and `bun env:destroy` deletes it. Ask the user before you run them, because they change AWS. CI runs the same three steps on every pull request.
+
 ## Pull requests
 
-**[MUST]** Follow the [PR template](.github/PULL_REQUEST_TEMPLATE.md). Every PR needs a title with the primary change, a description of what changed and why, the verification method and the review focus. Include the ticket key in the title when there is one.
+**[MUST]** Follow the PR template in `.github/PULL_REQUEST_TEMPLATE.md` at the top of the repository. Every PR needs a title with the primary change, a description of what changed and why, the verification method and the review focus. Include the ticket key in the title when there is one.
 
 Write the PR body as plain prose. Do not add markdown headings, bullet-only descriptions or a generated-by footer.
 

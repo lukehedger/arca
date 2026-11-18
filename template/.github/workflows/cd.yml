@@ -1,21 +1,28 @@
-name: cd
+name: <workflow-prefix>cd
 
 on:
   push:
     branches: [main]
+    # if: greenfield
     paths-ignore:
       - "**/*.md"
+    # if: migration
+    paths:
+      - "<app-dir>/**"
+      - "!<app-dir>/**/*.md"
+      - ".github/workflows/<app-dir>-*.yml"
+    # end
   workflow_dispatch:
 
 concurrency:
-  group: cd
+  group: <workflow-prefix>cd
   cancel-in-progress: false
 
 permissions: {}
 
 jobs:
   dev:
-    uses: ./.github/workflows/deploy.yml
+    uses: ./.github/workflows/<workflow-prefix>deploy.yml
     permissions:
       contents: read
       id-token: write
@@ -24,7 +31,7 @@ jobs:
 
   acc:
     needs: dev
-    uses: ./.github/workflows/deploy.yml
+    uses: ./.github/workflows/<workflow-prefix>deploy.yml
     permissions:
       contents: read
       id-token: write
@@ -33,7 +40,7 @@ jobs:
 
   prod:
     needs: acc
-    uses: ./.github/workflows/deploy.yml
+    uses: ./.github/workflows/<workflow-prefix>deploy.yml
     permissions:
       contents: read
       id-token: write

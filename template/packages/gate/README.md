@@ -9,31 +9,25 @@ Each call returns one of these outcomes. Nothing is thrown except store failures
 - `approved` - the decision is persisted. Carries the new state.
 - `rejected` - the core refused the command. Carries the core's rejection as it was returned.
 - `conflict` - another write landed between the read and the write, so nothing was persisted. The caller may retry, which decides again on fresh state.
-- `replayed` (event-sourcing only) - the stream already holds the idempotency key, so nothing was appended. Carries the current state.
-
-## Modes
-
-A project uses one mode. Delete the other mode's file, its exports in `src/index.ts` and its test.
-
-| Mode           | Files                                                      |
-| -------------- | ---------------------------------------------------------- |
-| Event-sourcing | `src/event-sourcing.ts` and `tests/event-sourcing.test.ts` |
-| CRUD           | `src/crud.ts` and `tests/crud.test.ts`                     |
+<!-- if: event-sourcing -->
+- `replayed` - the stream already holds the idempotency key, so nothing was appended. Carries the current state.
+<!-- end -->
 
 ## Public API
 
-Event-sourcing:
-
+<!-- if: event-sourcing -->
 - `createEventSourcedGate({ eventLog, initialState, decide, evolve })` - returns `apply({ streamId, command, idempotencyKey })` and `load(streamId)`. State is the replay of every event through `evolve` from `initialState`. `load` returns `undefined` for an empty stream.
 - `Decision<Event, Rejection>` - what `decide` returns: `{ outcome: 'approved', events }` or `{ outcome: 'rejected', rejection }`.
 - `EventSourcedCommand`, `EventSourcedResult`, `EventSourcedGate`, `EventSourcedGateDeps` - the types around them.
 
-CRUD:
-
+`apply` projects the new state before it appends the events. An event that fails a core assertion in `evolve` throws there, so the stream never holds it.
+<!-- if: crud -->
 - `createRecordGate({ recordStore, decide })` - returns `apply({ id, command })` and `load(id)`. `decide` receives `undefined` when no record exists. The write is conditional on the status and version that were read.
 - `Transition<State, Rejection>` - what `decide` returns: `{ outcome: 'approved', state }` or `{ outcome: 'rejected', rejection }`.
 - `RecordCommand`, `RecordResult`, `RecordGate`, `RecordGateDeps` - the types around them.
+<!-- end -->
 
+<!-- if: event-sourcing -->
 ## Example
 
 ```ts
@@ -49,3 +43,4 @@ const result = await gate.apply({
 });
 if (result.outcome === 'rejected') return toProblem(result.rejection);
 ```
+<!-- end -->

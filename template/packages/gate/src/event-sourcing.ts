@@ -1,3 +1,4 @@
+// if: event-sourcing
 import type { EventLog, StoredEvent } from '@<project>/store';
 
 export type Decision<Event, Rejection> =
@@ -75,6 +76,9 @@ export const createEventSourcedGate = <State, Command, Event, Rejection>(
     const decision = deps.decide(state, command);
     if (decision.outcome === 'rejected') return decision;
 
+    // Projecting runs the core's assertions on the new state, so an event that breaks one is never appended.
+    const next = project(state, decision.events);
+
     // A conflict means the decision was made on stale state. The caller may retry.
     const appended = await deps.eventLog.append(streamId, {
       expectedVersion: stream.version,
@@ -83,12 +87,9 @@ export const createEventSourcedGate = <State, Command, Event, Rejection>(
     });
     if (appended.outcome === 'conflict') return appended;
 
-    return {
-      outcome: 'approved',
-      state: project(state, decision.events),
-      events: decision.events,
-    };
+    return { outcome: 'approved', state: next, events: decision.events };
   };
 
   return { apply, load };
 };
+// end

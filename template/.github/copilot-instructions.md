@@ -1,6 +1,10 @@
 # Copilot instructions
 
+<!-- if: greenfield -->
 `CLAUDE.md`, `ARCHITECTURE.md`, `DOMAIN.md` and every file in `.claude/rules/` define this repository's rules. Read them before you review or write code. Where they disagree with your defaults, they win.
+<!-- if: migration -->
+`<app-dir>/` holds the new implementation. `<app-dir>/CLAUDE.md`, `<app-dir>/ARCHITECTURE.md`, `<app-dir>/DOMAIN.md` and every file in `<app-dir>/.claude/rules/` define its rules. Read them before you review or write code in `<app-dir>/`. Where they disagree with your defaults, they win. Paths in the rest of this file are relative to `<app-dir>/`.
+<!-- end -->
 
 ## Code review
 

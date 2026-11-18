@@ -6,6 +6,7 @@
     "test:unit": "bun test"
   },
   "dependencies": {
-    "@<project>/core": "workspace:*"
+    "@<project>/core": "workspace:*",
+    "zod": "catalog:"
   }
 }

@@ -1,3 +1,4 @@
+// if: event-sourcing
 import { createInMemoryEventLog, type EventLog } from '@<project>/store';
 import { describe, expect, test } from 'bun:test';
 import {
@@ -44,10 +45,15 @@ const decide = (
   return { outcome: 'approved', events: [{ type: 'closed' }] };
 };
 
+const COUNT_LIMIT = 10;
+
+// The decider never checks the limit, so only this assertion stands between a large increment and the stream.
 const evolve = (state: CounterState, event: CounterEvent): CounterState => {
   if (event.type === 'opened') return { ...state, status: 'open' };
   if (event.type === 'incremented') {
-    return { ...state, count: state.count + event.by };
+    const count = state.count + event.by;
+    if (count > COUNT_LIMIT) throw new Error('Count is over the limit');
+    return { ...state, count };
   }
   return { ...state, status: 'closed' };
 };
@@ -90,6 +96,27 @@ describe('event-sourced gate', () => {
       rejection: { reason: 'not_open' },
     });
     expect((await eventLog.read('counter-1')).version).toBe(0);
+  });
+
+  test('appends nothing when projecting the decision fails an assertion', async () => {
+    const eventLog = createInMemoryEventLog<CounterEvent>({ clock });
+    const gate = createGate(eventLog);
+    await gate.apply({ streamId: 'counter-1', command: { type: 'open' } });
+
+    const result = gate.apply({
+      streamId: 'counter-1',
+      command: { type: 'increment', by: COUNT_LIMIT + 1 },
+    });
+
+    await expect(result).rejects.toThrow('Count is over the limit');
+    expect((await eventLog.read('counter-1')).version).toBe(1);
+    expect(await gate.load('counter-1')).toEqual({ status: 'open', count: 0 });
+    expect(
+      await gate.apply({
+        streamId: 'counter-1',
+        command: { type: 'increment', by: 2 },
+      }),
+    ).toMatchObject({ outcome: 'approved', state: { count: 2 } });
   });
 
   test('replays a repeated idempotency key as a no-op', async () => {
@@ -149,3 +176,4 @@ describe('event-sourced gate', () => {
     expect(await createGate(eventLog).load('counter-1')).toBeUndefined();
   });
 });
+// end

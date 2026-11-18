@@ -1,0 +1,16 @@
+{
+  "name": "arca",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.4",
+  "scripts": {
+    "test": "bun test ./scripts && bun scripts/test-bootstrap.ts",
+    "test:scripts": "bun test ./scripts",
+    "types": "bun check"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "@types/node": "26.6.6",
+    "typescript": "7.0.2"
+  }
+}

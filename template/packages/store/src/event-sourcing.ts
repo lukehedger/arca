@@ -1,3 +1,4 @@
+// if: event-sourcing
 export type StoredEvent<Event> = {
   readonly sequence: number;
   readonly recordedAt: string;
@@ -51,7 +52,8 @@ export const createInMemoryEventLog = <Event>(
       return { outcome: 'appended', version: expectedVersion };
     }
 
-    const current = await read(streamId);
+    // Nothing awaits between this check and the write, so concurrent appends cannot both pass it.
+    const current = streams.get(streamId) ?? emptyStream;
     if (current.version !== expectedVersion) return { outcome: 'conflict' };
 
     const recordedAt = deps.clock().toISOString();
@@ -72,3 +74,4 @@ export const createInMemoryEventLog = <Event>(
 
   return { read, append };
 };
+// end

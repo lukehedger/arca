@@ -1,0 +1,18 @@
+{
+  "name": "@<project>/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:integration": "bun test ./tests/integration",
+    "test:unit": "bun test --path-ignore-patterns='tests/integration/**'"
+  },
+  "dependencies": {
+    "@<project>/errors": "workspace:*",
+    "@<project>/router": "workspace:*",
+    "@<project>/schema": "workspace:*",
+    "@<project>/telemetry": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "catalog:"
+  }
+}

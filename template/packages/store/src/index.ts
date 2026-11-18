@@ -1,4 +1,5 @@
 // biome-ignore-all assist/source/organizeImports: sorting would move exports across the mode markers.
+export { createDocumentClient } from './client.ts';
 // if: event-sourcing
 export type {
   Append,

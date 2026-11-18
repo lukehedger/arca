@@ -1,6 +1,6 @@
-name: deploy
+name: <workflow-prefix>deploy
 
-# cd.yml calls this once per GitHub environment. Each environment holds its own
+# The cd workflow calls this once per GitHub environment. Each environment holds its own
 # AWS_REGION, AWS_DEPLOY_ROLE_ARN, CONFIG_ENVIRONMENT and DELETION_PROTECTION variables.
 on:
   workflow_call:
@@ -10,6 +10,10 @@ on:
         type: string
 
 permissions: {}
+
+defaults:
+  run:
+    working-directory: <app-root>
 
 jobs:
   deploy:
@@ -30,7 +34,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version-file: package.json
+          bun-version-file: <app-root>/package.json
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -42,9 +46,11 @@ jobs:
           role-session-name: github-actions-${{ inputs.environment }}
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
 
+      # The environment name sets the stack name, so dev, acc and prod never share a stack.
       - name: Deploy
-        working-directory: infra
+        working-directory: <app-root>/infra
         env:
           CONFIG_ENVIRONMENT: ${{ vars.CONFIG_ENVIRONMENT }}
           DELETION_PROTECTION: ${{ vars.DELETION_PROTECTION }}
+          ENVIRONMENT_NAME: ${{ inputs.environment }}
         run: bun run cdk deploy --all --require-approval never

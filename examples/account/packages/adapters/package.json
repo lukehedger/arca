@@ -1,0 +1,16 @@
+{
+  "name": "@<project>/adapters",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test:unit": "bun test"
+  },
+  "dependencies": {
+    "@<project>/errors": "workspace:*",
+    "@<project>/gate": "workspace:*",
+    "@<project>/schema": "workspace:*"
+  }
+}

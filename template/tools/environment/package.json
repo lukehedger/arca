@@ -1,0 +1,12 @@
+{
+  "name": "@<project>/environment",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:unit": "bun test"
+  },
+  "dependencies": {
+    "infra": "workspace:*",
+    "zod": "catalog:"
+  }
+}

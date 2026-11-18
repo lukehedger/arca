@@ -6,7 +6,8 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test:unit": "bun test"
+    "test:integration": "bun test ./tests/integration",
+    "test:unit": "bun test --path-ignore-patterns='tests/integration/**'"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "catalog:",

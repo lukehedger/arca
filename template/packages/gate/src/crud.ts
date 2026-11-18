@@ -1,3 +1,4 @@
+// if: crud
 import type { RecordStore, StatusRecord } from '@<project>/store';
 
 export type Transition<State, Rejection> =
@@ -64,3 +65,4 @@ export const createRecordGate = <
 
   return { apply, load };
 };
+// end

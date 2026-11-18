@@ -1,0 +1,20 @@
+{
+  "name": "infra",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./stack-name": "./src/stack-name.ts"
+  },
+  "scripts": {
+    "cdk": "cdk",
+    "test:unit": "bun test"
+  },
+  "devDependencies": {
+    "@<project>/api": "workspace:*",
+    "@<project>/config": "workspace:*",
+    "@<project>/constructs": "workspace:*",
+    "aws-cdk": "catalog:",
+    "aws-cdk-lib": "catalog:",
+    "constructs": "catalog:"
+  }
+}

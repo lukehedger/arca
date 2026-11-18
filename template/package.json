@@ -12,10 +12,14 @@
     "tools/*"
   ],
   "scripts": {
+    "env:deploy": "bun tools/environment/scripts/environment.ts deploy",
+    "env:destroy": "bun tools/environment/scripts/environment.ts destroy",
+    "env:test": "bun tools/environment/scripts/environment.ts test",
     "fitness": "bun tools/fitness/scripts/check.ts",
     "fmt": "biome check --write",
     "types": "bun check",
     "mutation": "turbo mutation",
+    "test:integration": "turbo test:integration",
     "test:unit": "turbo test:unit",
     "verify": "bun fmt && bun types && bun fitness && bun test:unit"
   },

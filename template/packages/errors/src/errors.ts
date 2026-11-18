@@ -44,6 +44,14 @@ export class DecisionRejectedError extends Error {
   }
 }
 
+// Another write changed the state after it was read, so nothing was persisted. The caller may retry.
+export class ConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ConflictError';
+  }
+}
+
 export class IntegrationError extends Error {
   readonly integration: string;
 

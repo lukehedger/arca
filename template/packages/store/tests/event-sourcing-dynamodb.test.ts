@@ -1,3 +1,4 @@
+// if: event-sourcing
 import { describe, expect, test } from 'bun:test';
 import {
   ConditionalCheckFailedException,
@@ -238,3 +239,4 @@ describe('DynamoDB event log', () => {
     await expect(append).rejects.toBe(throttled);
   });
 });
+// end

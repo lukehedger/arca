@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   CapabilityNotSupportedError,
   classifyError,
+  ConflictError,
   DecisionRejectedError,
   IntegrationError,
   NotFoundError,
@@ -27,6 +28,19 @@ describe('classifyError', () => {
       statusCode: 404,
       code: 'NotFound',
       message: 'Order ord-1 not found',
+      outcome: 'client_error',
+    });
+  });
+
+  test('classifies a lost write race as 409', () => {
+    expect(
+      classifyError(
+        new ConflictError('Account acc-1 changed during the request'),
+      ),
+    ).toEqual({
+      statusCode: 409,
+      code: 'Conflict',
+      message: 'Account acc-1 changed during the request',
       outcome: 'client_error',
     });
   });

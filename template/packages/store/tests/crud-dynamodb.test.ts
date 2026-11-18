@@ -1,3 +1,4 @@
+// if: crud
 import { describe, expect, test } from 'bun:test';
 import {
   ConditionalCheckFailedException,
@@ -167,3 +168,4 @@ describe('DynamoDB record store', () => {
     await expect(write).rejects.toBe(throttled);
   });
 });
+// end

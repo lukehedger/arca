@@ -18,13 +18,13 @@ These properties let an agent verify its own work and reach near-deterministic o
 - **Functional core, imperative shell.** Decisions are pure functions of state and input. I/O happens only in the shell.
 - **Schema at the boundaries.** Every input and output is parsed against a schema where it enters or leaves the system.
 - **Negative-space programming.** Illegal states are unrepresentable and unhandled cases fail to compile. Assertions state what must never happen at run time and fail loudly when it does. `.claude/rules/typescript.md` lists the techniques.
-- **Disposable environments.** Any environment can be created and destroyed from code alone.
+- **Disposable environments.** Any environment can be created and destroyed from code alone. `bun env:deploy`, `bun env:test` and `bun env:destroy` do it for the current branch.
 
 ## Core rules
 
 ### One stack definition, any number of instances
 
-All application infrastructure lives in one CDK stack definition. Every environment is an instance of it: production, staging and each disposable environment for a branch or an agent. Instances differ through config and account context only, never through per-environment infrastructure. One definition keeps each deployment atomic. It also means a disposable environment runs the same infrastructure as production. Internal tools with no application routes may have their own stack. Settings AWS holds once per account and region, such as API Gateway's CloudWatch role, live in `infra/src/account-stack.ts`, which every instance in the account shares.
+All application infrastructure lives in one CDK stack definition. Every environment is an instance of it: production, staging and each disposable environment for a branch or an agent. Instances differ through config, account context and the environment name only, never through per-environment infrastructure. `ENVIRONMENT_NAME` sets the stack name and every resource name starts with it, so two instances in one account never collide. One definition keeps each deployment atomic. It also means a disposable environment runs the same infrastructure as production. Internal tools with no application routes may have their own stack. Settings AWS holds once per account and region, such as API Gateway's CloudWatch role, live in `infra/src/account-stack.ts`, which every instance in the account shares.
 
 ### Handlers stay thin
 
@@ -48,10 +48,10 @@ The core sits outside the chain. The gate is its only caller. The core calls not
 
 The core validates every state transition with a pure function. Only the core enforces lifecycle validity and domain rules.
 
-The gate runs every state change in three steps. It loads the current state from the store. It passes the state and the command to the core, which returns a decision. It persists an approved decision with a conditional write and returns a rejection unchanged. The core never calls the store or performs any other I/O. Persistence sits behind a store interface.
+The gate runs every state change in three steps. It loads the current state from the store. It passes the state and the command to the core, which returns a decision. It persists an approved decision with a conditional write and returns a rejection unchanged. The core never calls the store or performs any other I/O. Persistence sits behind a store interface. Every store implementation passes one contract suite, which includes two concurrent writes at the same version.
 
 <!-- if: event-sourcing -->
-State is an append-only stream of immutable events. Current state is a projection of those events and is never stored or mutated in place. Append-only removes write conflicts, gives a complete audit trail and makes commands idempotent.
+State is an append-only stream of immutable events. Current state is a projection of those events and is never stored or mutated in place. Append-only removes write conflicts, gives a complete audit trail and makes commands idempotent. The gate projects the new events through `evolve` before it appends them, so an event that fails a core assertion never reaches the stream.
 <!-- if: crud -->
 State is a record guarded by a state machine. Every write is a transition the core has approved, applied with a conditional write on the current status and version.
 <!-- end -->
@@ -67,6 +67,10 @@ Schemas define every request and response shape. They produce the compile-time t
 ### Routing is exhaustive and type-enforced
 
 The supported variants are a union type and the router registry is a `Record` over that union. A new variant without a registry entry is a compile error. Capabilities are opt-in by presence. An absent capability returns a 422, not a throwing stub. Never widen the union to `string`, cast away exhaustiveness or add a default case that hides a missing entry.
+
+### The core is deterministic
+
+The same state and command always produce the same decision. The core reads no clock, random source, identifier generator, environment, timer or other global. The shell generates those values and passes them in with the command. Biome enforces this in `core/`, with a GritQL plugin in `tools/fitness/rules/` for `Math.random`. `tools/fitness/tests/lint-rules.test.ts` proves each of these rules still fails a violation.
 
 ### The core asserts what must never happen
 
@@ -111,7 +115,7 @@ A durable execution that exhausts its retries records FAILED instead of throwing
 - `core/` - the functional core: state, transitions and domain rules
 - `packages/` - shared libraries: schema, router, adapters, gate, store, config, telemetry and CDK constructs
 - `infra/` - the CDK app
-- `tools/` - repo-internal CLIs that agents run: fitness functions, codegen from DOMAIN.md, seed data, ephemeral stack helpers
+- `tools/` - repo-internal CLIs that agents run: the fitness functions, the disposable environment tool and the status line
 - `docs/` - strategy documents and agent design
 
 ## Stack
@@ -124,7 +128,7 @@ The `catalog` in the root `package.json` pins every version. This section names 
 - **Biome** - the only linter and formatter. Its import rules enforce the layer boundaries in this document, so a layer that imports past the one below it fails CI.
 - **Zod** - the only schema library. Each schema produces the compile-time type through `z.infer`, the runtime validation and the OpenAPI spec.
 - **AWS CDK** - defines all infrastructure in TypeScript, in `infra/`.
-- **fast-check** - property-based tests for the core. Each invariant in DOMAIN.md has a property, declared with the `invariant` helper in `core/tests/`, that holds for every generated command.
+- **fast-check** - property-based tests for the core. Each invariant in DOMAIN.md has a property, declared with the `invariant` helper in `core/tests/`, that holds for every generated command. The fitness functions run the core tests and count a property only when it ran and passed.
 - **Stryker** - mutation tests for the core. A change to the core passes only when its tests kill at least 80% of the mutants.
 - **Powertools for AWS Lambda** - Logger emits the one wide event per invocation. Tracer sends traces to X-Ray. Metrics publishes CloudWatch metrics. Do not log, trace or publish metrics any other way.
 
@@ -148,6 +152,10 @@ Each row names the check that catches the anti-pattern. A row marked review has 
 | A layer calling upward or skipping the layer below                                            | Biome layer import rules                                                                                                         |
 | State changed anywhere but through the gate and the core                                      | Biome layer import rules. Only the gate may import the core and the store.                                                       |
 | The core calling the store or performing any other I/O                                        | Biome core rules                                                                                                                 |
+| A clock, random value, identifier or other global read in the core                            | Biome core rules and the determinism plugin. `tools/fitness/tests/lint-rules.test.ts` proves they still fail each violation.     |
+| Events appended before the core has checked the state they produce                            | Gate unit tests                                                                                                                  |
+| A store write that lets two concurrent writers both succeed                                   | Store contract tests, in memory in the unit tests and against DynamoDB in the integration tests                                  |
+| A stack or resource name that ignores the environment name                                    | Infrastructure assertions                                                                                                        |
 | Integration name checks outside the adapter package                                           | Review                                                                                                                           |
 | Hand-written types or hand-edited OpenAPI that duplicate a schema                             | Review                                                                                                                           |
 | A widened union or default case that hides a missing registry entry                           | Partly by the type check, which fails on a missing registry entry. A widened union or default case needs review.                 |
@@ -155,6 +163,6 @@ Each row names the check that catches the anti-pattern. A row marked review has 
 | A new async mechanism added as if it were routine                                             | Review                                                                                                                           |
 | A dependency added to save a few lines of internal code                                       | Review                                                                                                                           |
 | A name in DOMAIN.md that the core does not declare, or the reverse                            | Fitness functions: domain drift                                                                                                  |
-| An invariant without a property test                                                          | Fitness functions: invariant coverage                                                                                            |
+| An invariant without a property that runs, such as a skipped or commented-out one             | Fitness functions: invariant coverage                                                                                            |
 | Core tests that still pass when the core's behaviour changes                                  | Mutation tests                                                                                                                   |
 | An `AssertionError` caught so the code can carry on                                           | Review                                                                                                                           |

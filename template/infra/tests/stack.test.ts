@@ -1,4 +1,4 @@
-import { describe, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { AccountStack } from '../src/account-stack.ts';
@@ -26,6 +26,30 @@ describe('AppStack', () => {
         { AttributeName: 'SK', KeyType: 'RANGE' },
       ],
       TableName: 'app-state',
+    });
+  });
+
+  test('names the table after the stack, so environments in one account stay apart', () => {
+    const names = ['sample-pr-1', 'sample-pr-2'].map((stackName) =>
+      Template.fromStack(
+        new AppStack(new App(), stackName, {
+          configEnvironment: 'test',
+          deletionProtection: false,
+          env,
+        }),
+      ).findResources('AWS::DynamoDB::GlobalTable'),
+    );
+
+    expect(
+      names.map(
+        (resources) => Object.values(resources)[0]?.Properties.TableName,
+      ),
+    ).toEqual(['sample-pr-1-state', 'sample-pr-2-state']);
+  });
+
+  test('outputs the state table name for the integration tests', () => {
+    synth('test').hasOutput('StateTableName', {
+      Value: { Ref: Match.stringLikeRegexp('StateTable') },
     });
   });
 
