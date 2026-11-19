@@ -19,7 +19,7 @@ Never call `Create*`, `Update*`, `Put*`, `Delete*`, `Invoke*`, `secretsmanager:G
 
 ## Never scan DynamoDB
 
-IAM allows `Scan`, so nothing will stop you. Do not run it anyway. A scan reads and bills every item, competes with live traffic and pulls customer data into the transcript in bulk. A `--filter-expression` runs after the read, so it saves nothing.
+IAM allows `Scan`. The wren plugin refuses it, so never look for another way to run one. A scan reads and bills every item, competes with live traffic and pulls customer data into the transcript in bulk. A `--filter-expression` runs after the read, so it saves nothing.
 
 Query by the partition key or a GSI (see the persistence section of `DOMAIN.md`). Use `batch-get-item` for several known keys. If no key or index reaches the data, stop and say so. A missing access pattern is a design question for the user.
 

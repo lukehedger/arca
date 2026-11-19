@@ -25,5 +25,5 @@
     "packages/**/*.ts",
     "tools/**/*.ts"
   ],
-  "exclude": ["**/cdk.out/**", "**/.stryker-tmp/**"]
+  "exclude": ["**/cdk.out/**", "**/.stryker-tmp/**", "tools/wren/claude/**"]
 }

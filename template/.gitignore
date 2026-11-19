@@ -5,3 +5,6 @@ coverage
 .stryker-tmp
 reports
 .environments
+
+# The types the Claude Code engine writes when it loads a plugin
+**/.claude-plugin/types/

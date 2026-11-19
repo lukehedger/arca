@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.6.7/schema.json",
   "files": {
-    "includes": ["**", "!.claude"]
+    "includes": ["**", "!.claude", "!tools/wren/claude/types"]
   },
   "formatter": {
     "indentStyle": "space"
@@ -57,6 +57,16 @@
     }
   },
   "overrides": [
+    {
+      "includes": ["tools/wren/claude/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUndeclaredDependencies": "off"
+          }
+        }
+      }
+    },
     {
       "includes": ["api/**", "async/**"],
       "linter": {

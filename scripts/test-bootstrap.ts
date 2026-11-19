@@ -194,6 +194,23 @@ const checkAutomation = async (root: string, profile: ProfileCase): Promise<void
   );
   const statusLine = /show-toplevel\)\/([^"\\]+)/.exec(settings)?.[1] ?? '';
   check(existsSync(join(root, statusLine)), `The status line command points at ${statusLine}, which does not exist`);
+  await checkWrenPlugin(join(root, appRoot), workflowSchemaOf(JSON.parse(settings)));
+};
+
+// The settings enable wren from the project's own marketplace, so a session in the app root loads the worktree hooks.
+const checkWrenPlugin = async (appRoot: string, settings: Record<string, unknown>): Promise<void> => {
+  check(workflowSchemaOf(settings.enabledPlugins)[`wren@${NAME}`] === true, 'The Claude Code settings do not enable the wren plugin');
+  const source = workflowSchemaOf(workflowSchemaOf(workflowSchemaOf(settings.extraKnownMarketplaces)[NAME]).source);
+  const marketplaceRoot = join(appRoot, typeof source.path === 'string' ? source.path : '');
+  const marketplace = workflowSchemaOf(
+    JSON.parse(await readFile(join(marketplaceRoot, '.claude-plugin/marketplace.json'), 'utf8')),
+  );
+  check(marketplace.name === NAME, `The marketplace is named ${String(marketplace.name)}, not ${NAME}`);
+  const plugins = Array.isArray(marketplace.plugins) ? marketplace.plugins.map(workflowSchemaOf) : [];
+  const wren = plugins.find((plugin) => plugin.name === 'wren');
+  const pluginRoot = join(marketplaceRoot, typeof wren?.source === 'string' ? wren.source : '');
+  check(existsSync(join(pluginRoot, '.claude-plugin/plugin.json')), `The wren plugin source ${pluginRoot} has no plugin.json`);
+  check(existsSync(join(pluginRoot, 'hooks/hooks.json')), 'The wren plugin has no hooks module');
 };
 
 type Breakage = {
@@ -229,6 +246,28 @@ const addInvariant = async (appRoot: string): Promise<void> => {
 };
 
 const breakagesFor = (state: State): readonly Breakage[] => [
+  {
+    name: 'isolation: the guard lets an edit into the primary checkout',
+    files: ['tools/wren/worktree/guard.ts'],
+    expected: '(fail) pathRefusal > refuses a repository file before the worktree',
+    apply: (appRoot) =>
+      edit(
+        join(appRoot, 'tools/wren/worktree/guard.ts'),
+        '  if (!isWorktree(checkout)) return ENTER_WORKTREE;',
+        '  if (!isWorktree(checkout)) return undefined;',
+      ),
+  },
+  {
+    name: 'isolation: the hooks module reads a field the engine does not send',
+    files: ['tools/wren/claude/register.ts'],
+    expected: 'error file="tools/wren/claude/register.ts"',
+    apply: (appRoot) =>
+      edit(
+        join(appRoot, 'tools/wren/claude/register.ts'),
+        'refusePath($, e.agentId, e.notebook_path)',
+        'refusePath($, e.agentId, e.path)',
+      ),
+  },
   {
     name: 'architecture: a handler imports the gate',
     files: ['api/accounts/handler.ts'],
@@ -434,6 +473,14 @@ const testProfileIn = async (root: string, profile: ProfileCase): Promise<void> 
   await step('fresh copy installs and verifies', async () => {
     await mustPass('bun install', ['bun', 'install'], appRoot);
     await mustPass('bun verify', ['bun', 'verify'], appRoot);
+  });
+
+  await step('the wren hooks module passes its tests in Claude Code', async () => {
+    if (Bun.which('claude') === null) {
+      console.info('  skipped: claude is not on PATH, so `claude plugin test` cannot run');
+      return;
+    }
+    await mustPass('bun run test:mod', ['bun', 'run', 'test:mod'], join(appRoot, 'tools/wren'));
   });
 
   await step('account example verifies and kills its mutants', async () => {

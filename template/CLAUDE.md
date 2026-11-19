@@ -28,6 +28,26 @@ Each invocation emits exactly one structured log line that carries all the conte
 
 **[MUST]** Define every third-party dependency version in the root `package.json` `catalog`. Use `catalog:` in workspace manifests and `workspace:*` for a dependency on another workspace package. Never put a version, range or tag directly in a workspace manifest.
 
+## Worktrees
+
+**[MUST]** Make every change in a worktree. Before your first shell command, edit or write in a session, call `EnterWorktree` with a short name for the task. Skip this when the session already runs in a worktree, such as one started with `claude --worktree`.
+
+The wren plugin in `tools/wren/` enforces this. It refuses every shell command in the primary checkout and every edit or write to a file in the repository. Before Claude Code creates a worktree, the plugin fetches `origin/main`, so the worktree starts from the latest code.
+
+**[MUST]** Change files only inside your worktree. Never change the primary checkout or another worktree. A file you read before you entered the worktree has its own copy in the worktree. Change that copy.
+
+**[MUST]** If the plugin refuses `EnterWorktree`, stop and report its reason to the user. Never work around a refusal.
+
+**[MUST]** Never call `ExitWorktree` unless the user asks. Claude Code offers to keep or remove the worktree when the session ends.
+
+**[MUST]** Run `bun install` in a new worktree before you run `bun verify`. A new worktree has no `node_modules`.
+
+## Shell commands
+
+The wren plugin refuses destructive Git and file commands and every AWS CLI call outside the read-only list in the `aws` skill. It asks the user before a recursive removal, `sudo`, `chmod 777` or a recursive `chown`.
+
+**[MUST]** If the plugin refuses a command, never work around it with another command that has the same effect. Report the refusal to the user.
+
 ## Verification
 
 **[MUST]** Run `bun verify` from the repository root before you hand over a change and fix what it reports. It runs Biome lint and format, the type check, the fitness functions and the unit tests. It fails if any of them fails.
