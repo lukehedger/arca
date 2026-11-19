@@ -199,8 +199,6 @@ const checkAutomation = async (root: string, profile: ProfileCase): Promise<void
 type Breakage = {
   readonly name: string;
   readonly files: readonly string[];
-  // Directories the breakage creates, which the restore deletes.
-  readonly created?: readonly string[];
   readonly expected: string;
   readonly apply: (appRoot: string) => Promise<void>;
 };
@@ -257,16 +255,6 @@ const breakagesFor = (state: State): readonly Breakage[] => [
     expected: 'error file="packages/router/src/registry.ts"',
     apply: (appRoot) =>
       edit(join(appRoot, 'packages/schema/src/variant.ts'), "['ledger'] as const", "['ledger', 'acme'] as const"),
-  },
-  {
-    name: 'layout: a top-level directory holds a src directory',
-    files: [],
-    created: ['core/src'],
-    expected: 'Layout: `core/src/` exists',
-    apply: async (appRoot) => {
-      await mkdir(join(appRoot, 'core/src'));
-      await writeFile(join(appRoot, 'core/src/rules.ts'), 'export const limit = 1;\n');
-    },
   },
   {
     name: 'determinism: the core calls Math.random',
@@ -376,7 +364,6 @@ const proveBreakageFails = async (appRoot: string, breakage: Breakage): Promise<
     );
   } finally {
     for (const [file, content] of originals) await writeFile(join(appRoot, file), content);
-    for (const directory of breakage.created ?? []) await rm(join(appRoot, directory), { recursive: true, force: true });
   }
 };
 

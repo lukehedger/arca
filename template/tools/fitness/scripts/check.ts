@@ -7,7 +7,6 @@ import { join } from 'node:path';
 import { parseDomain } from '../domain.ts';
 import { findDrift } from '../drift.ts';
 import { findUntestedInvariants, parsePropertyResults } from '../invariants.ts';
-import { findNestedSources } from '../layout.ts';
 
 const root = join(import.meta.dirname, '../../..');
 
@@ -38,7 +37,6 @@ const runProperties = async (): Promise<string> => {
 };
 
 const findings = [
-  ...findNestedSources((path) => existsSync(join(root, path))),
   ...findDrift(domain, vocabulary),
   ...findUntestedInvariants(
     vocabulary.invariants,
