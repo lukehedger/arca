@@ -7,7 +7,7 @@ An adapter declares a `buildContext` and the capabilities it offers. The router 
 ## Public API
 
 - `CapabilitySignatures` - one entry per capability: the arguments it takes after the context and what it resolves to. Empty until the first capability is added.
-- `ContextDeps` - what the router passes to every `buildContext`, such as the gate and config. Empty until an adapter needs a dependency.
+- `ContextDeps` - what the router passes to every `buildContext`, such as the gate. Empty until an adapter needs a dependency.
 - `Adapter<TContext>` - `buildContext(deps)` plus the opt-in `capabilities`.
 - `Capabilities<TContext>` and `Capability<TContext, TSignature>` - the capability map and one capability function.
 - `CapabilitySignature` and `SignatureMap` - the constraints the router and tests build on.
@@ -29,7 +29,7 @@ export type CapabilitySignatures = {
 type AcmeContext = { readonly client: AcmeClient };
 
 export const acme: Adapter<AcmeContext> = {
-  buildContext: async (deps) => ({ client: makeAcmeClient(deps.config) }),
+  buildContext: async (deps) => ({ client: makeAcmeClient(deps.acmeBaseUrl) }),
   capabilities: {
     create: async (context, request) =>
       translateOrder(await context.client.create(request)),

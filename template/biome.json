@@ -82,7 +82,6 @@
                       "!@<project>/schema",
                       "!@<project>/router",
                       "!@<project>/telemetry",
-                      "!@<project>/config",
                       "@aws-sdk/*",
                       "!@<project>/errors"
                     ],
@@ -125,7 +124,6 @@
                       "!@<project>/adapters",
                       "!@<project>/schema",
                       "!@<project>/telemetry",
-                      "!@<project>/config",
                       "!@<project>/errors"
                     ],
                     "message": "The router only resolves the adapter for a variant. It calls the adapters and nothing below them."
@@ -167,7 +165,6 @@
                       "!@<project>/gate",
                       "!@<project>/schema",
                       "!@<project>/telemetry",
-                      "!@<project>/config",
                       "!@<project>/errors"
                     ],
                     "message": "An adapter translates a request into a command and passes it to the gate. It calls nothing below the gate."
@@ -209,7 +206,6 @@
                       "!@<project>/core",
                       "!@<project>/store",
                       "!@<project>/telemetry",
-                      "!@<project>/config",
                       "!@<project>/errors"
                     ],
                     "message": "The gate loads state from the store, asks the core for a decision and persists it. It calls only the core and the store."
@@ -248,8 +244,7 @@
                   {
                     "group": [
                       "@<project>/*",
-                      "!@<project>/telemetry",
-                      "!@<project>/config"
+                      "!@<project>/telemetry"
                     ],
                     "message": "The store persists state. It knows nothing of the layers above it, including the core."
                   },
@@ -276,7 +271,7 @@
       }
     },
     {
-      "includes": ["packages/config/**"],
+      "includes": ["packages/telemetry/**"],
       "linter": {
         "rules": {
           "style": {
@@ -285,12 +280,8 @@
               "options": {
                 "patterns": [
                   {
-                    "group": [
-                      "@<project>/*",
-                      "!@<project>/schema",
-                      "!@<project>/telemetry"
-                    ],
-                    "message": "Config depends only on the schema and telemetry packages."
+                    "group": ["@<project>/*", "!@<project>/errors"],
+                    "message": "Telemetry depends only on the errors package, which classifies the failures it records."
                   },
                   {
                     "group": [
@@ -315,11 +306,7 @@
       }
     },
     {
-      "includes": [
-        "packages/schema/**",
-        "packages/telemetry/**",
-        "packages/errors/**"
-      ],
+      "includes": ["packages/schema/**", "packages/errors/**"],
       "linter": {
         "rules": {
           "style": {

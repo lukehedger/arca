@@ -33,7 +33,7 @@ Run the CDK CLI from the catalog-pinned `aws-cdk` package through a `cdk` script
 
 **[MUST]** Type the stack's props by extending `StackProps`. Keep the constructor short and provision resources in named private methods.
 
-**[MUST]** Keep infrastructure configuration in TypeScript props, never in separate JSON files. Runtime configuration is AppConfig.
+**[MUST]** Keep infrastructure configuration in TypeScript props, never in separate JSON files.
 
 ## Environments
 
@@ -47,8 +47,6 @@ type AppStackProps = StackProps & {
 ```
 
 Never branch on `if (stage === 'prod')`.
-
-**[SHOULD]** Deploy alarms and dashboards only where someone acts on them, usually production. Gate them with a prop such as `enableAlarms`.
 
 ## Constructs
 
@@ -77,7 +75,3 @@ Never branch on `if (stage === 'prod')`.
 - **Configuration** of each resource and its integrations
 - **Permissions** that let one resource call another
 - **Payloads** passed between resources
-
-## Delivery
-
-**[MUST]** One pipeline deploys the stack through every environment in order.

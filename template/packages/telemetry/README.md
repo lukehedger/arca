@@ -5,7 +5,7 @@ Logging, tracing and metrics for Lambda handlers through Powertools. Each invoca
 ## Public API
 
 - `createTelemetry({ serviceName, namespace })` - a `Telemetry` (logger, tracer and metrics) backed by Powertools. Metrics publish to the CloudWatch `namespace` in Embedded Metric Format.
-- `instrument(telemetry, handler, { deadlineMarginMs? })` - wraps an API Gateway handler. It resets the context a warm container kept, traces the invocation in a `handler` subsegment, records `route`, `request_id`, `client_id` (from the Cognito authorizer claim only), `status_code` and `outcome`, then writes the wide event as `invocation` and flushes metrics. With `deadlineMarginMs` it writes the wide event that long before the Lambda timeout, with `outcome: timeout` and the outbound calls still open in `open_calls`.
+- `instrument(telemetry, handler, { deadlineMarginMs? })` - wraps an API Gateway handler. It resets the context a warm container kept, traces the invocation in a `handler` subsegment, records `route`, `request_id`, `client_id` (from the authoriser's `client_id` claim only, such as a Cognito token's), `status_code` and `outcome`, then writes the wide event as `invocation` and flushes metrics. With `deadlineMarginMs` it writes the wide event that long before the Lambda timeout, with `outcome: timeout` and the outbound calls still open in `open_calls`.
 - `recordContext(telemetry, context)` - records the request keys.
 - `createContextRecorder<AppContext>(routing)` - returns a recorder for the request keys plus the app's own keys. `routing` declares a kind for every app key, so a key without one fails to compile.
 - `resetTelemetry(telemetry)` - clears logger keys and metric dimensions, for a shell that does not use `instrument`.
@@ -22,7 +22,9 @@ Every recorded key reaches the wide event in snake case. Its kind decides where 
 
 Give `dimension` only to low-cardinality keys, since each value is a new metric series. `route` and `outcome` are dimensions, `status_code` and `client_id` are annotations and `request_id` is log only.
 
-`outcome` is `success`, `client_error`, `server_error` or `timeout`. `instrument` derives it from the response status: 4xx is a client error, 504 a timeout and any other 5xx a server error. A thrown error is a server error unless it is a timeout or abort.
+`outcome` is `success`, `client_error`, `server_error`, `timeout` or `assertion_failed`. For a response that `mapErrorToResponse` built, `instrument` takes the outcome from the error's classification. For any other response, it derives the outcome from the status: 4xx is a client error, 504 a timeout and any other 5xx a server error. A thrown error is a server error unless it is a failed assertion, a timeout or an abort. The `Monitoring` construct alarms on the `assertion_failed` outcome.
+
+This package depends only on `@<project>/errors`, which classifies the failures it records.
 
 A metric added without dimensions carries one dimension set for each recorded context that had a dimension, so its series cannot be summed. Pass explicit dimensions to `addMetric` to emit it once with only those.
 

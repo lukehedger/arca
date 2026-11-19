@@ -7,6 +7,7 @@ import {
   type Server,
 } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { mapErrorToResponse } from '@<project>/errors';
 import type {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
@@ -127,6 +128,37 @@ describe('instrument', () => {
     );
 
     expect(fake.events[0]?.keys.outcome).toBe(outcome);
+  });
+
+  test('records a failed assertion behind a mapped 500 as assertion_failed', async () => {
+    const fake = fakeTelemetry();
+    const failure = new Error('Balance is negative after the command');
+    failure.name = 'AssertionError';
+    const handler = async (): Promise<APIGatewayProxyResult> =>
+      mapErrorToResponse(failure, 'lambda-request-1');
+
+    await instrument(fake.telemetry, handler)(apiEvent(), lambdaContext());
+
+    expect(fake.events[0]?.keys).toMatchObject({
+      status_code: 500,
+      outcome: 'assertion_failed',
+    });
+  });
+
+  test('records a thrown failed assertion as assertion_failed', async () => {
+    const fake = fakeTelemetry();
+    const handler = async (): Promise<APIGatewayProxyResult> => {
+      const failure = new Error('Balance is negative after the command');
+      failure.name = 'AssertionError';
+      throw failure;
+    };
+
+    await instrument(fake.telemetry, handler)(
+      apiEvent(),
+      lambdaContext(),
+    ).catch(() => {});
+
+    expect(fake.events[0]?.keys.outcome).toBe('assertion_failed');
   });
 
   test('annotates the trace inside the handler subsegment', async () => {

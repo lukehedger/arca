@@ -42,9 +42,9 @@ wren never changes the checkout you opened. The wren plugin refuses every change
 
 The wren plugin checks every shell command before it runs. It refuses `git reset --hard`, a forced `git clean`, a force push, `git branch -D` and a forced recursive removal of the root, home or parent directory. It asks you before a recursive removal, `sudo`, `chmod 777` or a recursive `chown`. Without an interactive UI, it refuses them. It refuses every AWS CLI call outside the read-only list in the `aws` skill, including a DynamoDB scan and a secret value read. It looks through shell wrappers, chained commands and command substitutions.
 
-### attribution
+### alarms
 
-Claude Code adds no attribution to commits or pull requests. `.claude/settings.json` sets both `attribution` values to an empty string.
+A failed core assertion raises its own alarm, so a broken invariant never hides among generic 500s. The errors package gives it the `assertion_failed` outcome, the wide event records it and the `Monitoring` construct alarms on a single occurrence.
 
 ### status line
 

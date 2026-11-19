@@ -3,13 +3,7 @@
 # if: greenfield
 /CLAUDE.md <owner>
 /.claude/rules/ <owner>
-
-# A merge deploys these files to production as whole-profile replacements.
-/packages/config/environments/production/ <owner>
 # if: migration
 /<app-dir>/CLAUDE.md <owner>
 /<app-dir>/.claude/rules/ <owner>
-
-# A merge deploys these files to production as whole-profile replacements.
-/<app-dir>/packages/config/environments/production/ <owner>
 # end

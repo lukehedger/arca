@@ -24,7 +24,7 @@ These properties let an agent verify its own work and reach near-deterministic o
 
 ### One stack definition, any number of instances
 
-All application infrastructure lives in one CDK stack definition. Every environment is an instance of it: production, staging and each disposable environment for a branch or an agent. Instances differ through config, account context and the environment name only, never through per-environment infrastructure. `ENVIRONMENT_NAME` sets the stack name and every resource name starts with it, so two instances in one account never collide. One definition keeps each deployment atomic. It also means a disposable environment runs the same infrastructure as production. Internal tools with no application routes may have their own stack. Settings AWS holds once per account and region, such as API Gateway's CloudWatch role, live in `infra/account-stack.ts`, which every instance in the account shares.
+All application infrastructure lives in one CDK stack definition. Every environment is an instance of it: production, staging and each disposable environment for a branch or an agent. Instances differ through stack props, account context and the environment name only, never through per-environment infrastructure. `ENVIRONMENT_NAME` sets the stack name and every resource name starts with it, so two instances in one account never collide. One definition keeps each deployment atomic. It also means a disposable environment runs the same infrastructure as production. Internal tools with no application routes may have their own stack. Settings AWS holds once per account and region, such as API Gateway's CloudWatch role, live in `infra/account-stack.ts`, which every instance in the account shares.
 
 ### Handlers stay thin
 
@@ -82,7 +82,7 @@ The core checks its negative space with `assert` and `unreachable` from `core/as
 
 ### Reliability comes from observability, not retry machinery
 
-Every invocation emits one wide structured event with all the context gathered during the request. Tracing, metrics and DLQ alarms complete the picture. A failed assertion emits its own failure metric with an alarm, so a broken invariant never hides among generic errors. Do not add bespoke retry frameworks, reconciliation jobs or shadow state. Idempotent writes plus observability are the reliability strategy.
+Every invocation emits one wide structured event with all the context gathered during the request. Tracing, metrics and DLQ alarms complete the picture. A failed assertion has its own alarm, so a broken invariant never hides among generic errors. `classifyError` gives it the `assertion_failed` outcome, the wide event records that outcome and `Monitoring` alarms on a single occurrence. Do not add bespoke retry frameworks, reconciliation jobs or shadow state. Idempotent writes plus observability are the reliability strategy.
 
 ### Dependencies stay minimal
 
@@ -95,9 +95,7 @@ Keep the AWS surface area small. Every new primitive is one more thing to operat
 - **Sync** - Lambda behind one API Gateway REST API. No always-on compute or containers. Handlers run on Node.js and are bundled with esbuild through CDK's `NodejsFunction`.
 - **Async** - Lambda durable functions for long-running, multi-step or callback-driven work.
 - **State** - DynamoDB, single-table per store, reached only through the store package.
-- **Config and secrets** - runtime config is schema-validated JSON served by AppConfig. Secrets live in Secrets Manager behind a wrapper.
-- **Infrastructure** - CDK, standardised through L3 constructs that apply tracing, IAM, log groups and dashboards. Extend the constructs rather than add raw resources.
-- **Auth** - Cognito at the edge.
+- **Infrastructure** - CDK, standardised through L3 constructs that apply tracing, IAM, log groups and alarms. Extend the constructs rather than add raw resources.
 
 Any other async mechanism (SQS queue, S3 trigger, DynamoDB Stream consumer, EventBridge bus) is an architectural decision, not a routine addition. Each must earn its place:
 
@@ -106,14 +104,14 @@ Any other async mechanism (SQS queue, S3 trigger, DynamoDB Stream consumer, Even
 - **Stream consumer** - every change it reacts to lands in one table, so subscribing beats a call at each write site.
 - **Event bus** - consumers outside the system need a contract behind its own trust boundary.
 
-A durable execution that exhausts its retries records FAILED instead of throwing, so the Lambda `Errors` alarm cannot see it. Emit and alarm on a failure metric of your own.
+A durable execution that exhausts its retries records FAILED instead of throwing, so the Lambda `Errors` alarm cannot see it. Emit a failure metric of your own and pass it to `Monitoring` in `failureMetrics`.
 
 ## Codebase structure
 
 - `api/` - thin Lambda handlers behind API Gateway
 - `async/` - handlers for durable functions, queues, schedules and streams
 - `core/` - the functional core: state, transitions and domain rules
-- `packages/` - shared libraries: schema, router, adapters, gate, store, config, telemetry and CDK constructs
+- `packages/` - shared libraries: schema, router, adapters, gate, store, errors, telemetry and CDK constructs
 - `infra/` - the CDK app
 - `tools/` - repo-internal CLIs that agents run: the fitness functions, the disposable environment tool and the status line
 - `docs/` - strategy documents and agent design
@@ -168,5 +166,6 @@ Each row names the check that catches the anti-pattern. A row marked review has 
 | An invariant without a property that runs, such as a skipped or commented-out one             | Fitness functions: invariant coverage                                                                                                         |
 | Core tests that still pass when the core's behaviour changes                                  | Mutation tests                                                                                                                                |
 | An `AssertionError` caught so the code can carry on                                           | Review                                                                                                                                        |
+| An assertion failure that raises no alarm                                                     | Errors and constructs unit tests: the classification of a failed assertion and the alarm on it                                                |
 | A `src/` directory inside `api/`, `async/`, `core/` or `infra/`                               | Review                                                                                                                                        |
 | A change made in the primary checkout instead of a worktree                                   | The wren plugin, which refuses every shell command, edit and write that would change the primary checkout. Its unit tests prove each refusal. |
