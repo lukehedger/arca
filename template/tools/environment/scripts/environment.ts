@@ -40,10 +40,9 @@ const environment = resolveEnvironment(
 );
 const stackName = stackNameFor(environment);
 const outputsFile = join(root, '.environments', `${environment}.json`);
-// A disposable environment reads the test config and leaves nothing behind when it is destroyed.
+// A disposable environment leaves nothing behind when it is destroyed.
 const cdkEnv = {
   ENVIRONMENT_NAME: environment,
-  CONFIG_ENVIRONMENT: 'test',
   DELETION_PROTECTION: 'false',
 };
 

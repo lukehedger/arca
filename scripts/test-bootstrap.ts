@@ -152,7 +152,7 @@ const workflowSchemaOf = (value: unknown): Record<string, unknown> =>
 const checkAutomation = async (root: string, profile: ProfileCase): Promise<void> => {
   const appRoot = profile.appDir ?? '.';
   const prefix = profile.appDir === undefined ? '' : `${profile.appDir}-`;
-  const workflows = ['ci', 'cd', 'deploy', 'dependencies'].map((name) => `.github/workflows/${prefix}${name}.yml`);
+  const workflows = ['ci'].map((name) => `.github/workflows/${prefix}${name}.yml`);
 
   for (const path of workflows) {
     check(existsSync(join(root, path)), `${path} is missing from the repository root`);
@@ -187,11 +187,6 @@ const checkAutomation = async (root: string, profile: ProfileCase): Promise<void
   }
 
   const settings = await readFile(join(root, appRoot, '.claude/settings.json'), 'utf8');
-  const { attribution } = workflowSchemaOf(JSON.parse(settings));
-  check(
-    JSON.stringify(attribution) === JSON.stringify({ commit: '', pr: '' }),
-    'The Claude Code settings let it add attribution to commits or pull requests',
-  );
   const statusLine = /show-toplevel\)\/([^"\\]+)/.exec(settings)?.[1] ?? '';
   check(existsSync(join(root, statusLine)), `The status line command points at ${statusLine}, which does not exist`);
   await checkWrenPlugin(join(root, appRoot), workflowSchemaOf(JSON.parse(settings)));
@@ -313,6 +308,24 @@ const breakagesFor = (state: State): readonly Breakage[] => [
     apply: (appRoot) => append(join(appRoot, 'core/account.ts'), 'export const decidedAt = (): number => Date.now();'),
   },
   {
+    name: 'observability: a failed assertion is classified as an ordinary server error',
+    files: ['packages/errors/src/classify-error.ts'],
+    expected: '(fail) classifyError > classifies a failed core assertion as a 500 without its message',
+    apply: (appRoot) =>
+      edit(
+        join(appRoot, 'packages/errors/src/classify-error.ts'),
+        "  if (isAssertionFailure(error)) return 'assertion_failed';\n",
+        '',
+      ),
+  },
+  {
+    name: 'observability: a failed assertion raises no alarm',
+    files: ['packages/constructs/src/monitoring.ts'],
+    expected: '(fail) Monitoring > notifies the topic when the composite error alarm changes state',
+    apply: (appRoot) =>
+      edit(join(appRoot, 'packages/constructs/src/monitoring.ts'), '        this.assertionFailedAlarm,\n', ''),
+  },
+  {
     name: 'domain: DOMAIN.md names an invariant the vocabulary lacks',
     files: ['DOMAIN.md'],
     expected: `DOMAIN.md defines invariant \`${NEW_INVARIANT}\``,
@@ -413,7 +426,6 @@ const synthEnvironments = async (appRoot: string): Promise<void> => {
       CDK_OUTDIR: join(outdir, environment),
       CDK_DEFAULT_ACCOUNT: '123456789012',
       CDK_DEFAULT_REGION: 'eu-west-1',
-      CONFIG_ENVIRONMENT: 'test',
       DELETION_PROTECTION: 'false',
       ENVIRONMENT_NAME: environment,
     });

@@ -1,3 +1,4 @@
+import { classificationOf, isAssertionFailure } from '@<project>/errors';
 import type {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
@@ -46,8 +47,15 @@ const outcomeOfStatus = (statusCode: number): Outcome => {
   return 'success';
 };
 
-const outcomeOfError = (error: unknown): Outcome =>
-  isTimeoutError(error) ? 'timeout' : 'server_error';
+// A response from mapErrorToResponse knows the error behind it, which its status alone cannot say.
+const outcomeOfResult = (result: APIGatewayProxyResult): Outcome =>
+  classificationOf(result)?.outcome ?? outcomeOfStatus(result.statusCode);
+
+const outcomeOfError = (error: unknown): Outcome => {
+  if (isAssertionFailure(error)) return 'assertion_failed';
+
+  return isTimeoutError(error) ? 'timeout' : 'server_error';
+};
 
 const asError = (error: unknown): Error =>
   error instanceof Error ? error : new Error('Handler threw a non-Error value');
@@ -109,7 +117,7 @@ export const instrument = (
         });
         recordContext(telemetry, {
           statusCode: result.statusCode,
-          outcome: outcomeOfStatus(result.statusCode),
+          outcome: outcomeOfResult(result),
         });
 
         return result;

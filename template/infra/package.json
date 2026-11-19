@@ -10,7 +10,6 @@
     "test:unit": "bun test"
   },
   "devDependencies": {
-    "@<project>/config": "workspace:*",
     "@<project>/constructs": "workspace:*",
     "aws-cdk": "catalog:",
     "aws-cdk-lib": "catalog:",

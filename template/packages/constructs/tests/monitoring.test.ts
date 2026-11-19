@@ -1,6 +1,7 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, test } from 'bun:test';
 import { App, Duration, Stack } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
+import { Metric } from 'aws-cdk-lib/aws-cloudwatch';
 import { Topic } from 'aws-cdk-lib/aws-sns';
 import { Api, LambdaFunction, Monitoring } from '../src/index.ts';
 
@@ -18,16 +19,19 @@ const synth = (): Template => {
     timeout: Duration.seconds(10),
   });
   const api = new Api(stack, 'OrderApi', {
-    description: 'Serves orders to authenticated clients',
+    description: 'Serves orders to any client',
     name: 'order-api',
-    routes: [{ handler, method: 'GET', path: 'orders/{orderId}' }],
-    userPoolArns: [
-      'arn:aws:cognito-idp:eu-west-1:123456789012:userpool/eu-west-1_example',
-    ],
+    routes: [{ handler, method: 'GET', path: 'orders/{orderId}', public: true }],
   });
   new Monitoring(stack, 'Monitoring', {
     alarmTopic: new Topic(stack, 'AlarmTopic', { topicName: 'order-alarms' }),
     api,
+    failureMetrics: {
+      'order-expiry': new Metric({
+        metricName: 'OrderExpiryFailed',
+        namespace: 'orders',
+      }),
+    },
     functions: [handler],
     name: 'orders',
   });
@@ -59,6 +63,40 @@ describe('Monitoring', () => {
     });
   });
 
+  test('counts each wide event with a failed assertion in the function log group', () => {
+    synth().hasResourceProperties('AWS::Logs::MetricFilter', {
+      FilterPattern: '{ $.outcome = "assertion_failed" }',
+      LogGroupName: { Ref: Match.stringLikeRegexp('^GetOrderFunctionLogGroup') },
+      MetricTransformations: [
+        {
+          MetricName: 'AssertionFailed',
+          MetricNamespace: 'orders',
+          MetricValue: '1',
+        },
+      ],
+    });
+  });
+
+  test('alarms on a single failed assertion', () => {
+    synth().hasResourceProperties('AWS::CloudWatch::Alarm', {
+      AlarmName: 'orders-assertion-failed',
+      EvaluationPeriods: 1,
+      MetricName: 'AssertionFailed',
+      Namespace: 'orders',
+      Threshold: 1,
+      TreatMissingData: 'notBreaching',
+    });
+  });
+
+  test('alarms on a single occurrence of each failure metric', () => {
+    synth().hasResourceProperties('AWS::CloudWatch::Alarm', {
+      AlarmName: 'orders-order-expiry-failed',
+      EvaluationPeriods: 1,
+      MetricName: 'OrderExpiryFailed',
+      Threshold: 1,
+    });
+  });
+
   test('notifies the topic when the composite error alarm changes state', () => {
     const template = synth();
     const topic = { Ref: Match.stringLikeRegexp('^AlarmTopic') };
@@ -67,26 +105,23 @@ describe('Monitoring', () => {
       AlarmActions: [topic],
       AlarmName: 'orders-errors',
       AlarmRule: Match.objectLike({
-        'Fn::Join': ['', Match.arrayWith([Match.stringLikeRegexp('ALARM')])],
+        'Fn::Join': [
+          '',
+          Match.arrayWith([
+            Match.objectLike({
+              'Fn::GetAtt': [
+                Match.stringLikeRegexp('AssertionFailedAlarm'),
+                'Arn',
+              ],
+            }),
+          ]),
+        ],
       }),
       OKActions: [topic],
     });
   });
 
-  test('draws a RED dashboard for the API and the functions', () => {
-    const dashboards = synth().findResources('AWS::CloudWatch::Dashboard');
-    const body = JSON.stringify(dashboards);
-
-    expect(body).toContain('"DashboardName":"orders"');
-    for (const metric of [
-      'Count',
-      '5XXError',
-      'Latency',
-      'Invocations',
-      'Errors',
-      'Duration',
-    ]) {
-      expect(body).toContain(metric);
-    }
+  test('creates no dashboard', () => {
+    synth().resourceCountIs('AWS::CloudWatch::Dashboard', 0);
   });
 });

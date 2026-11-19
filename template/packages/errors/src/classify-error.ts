@@ -7,7 +7,11 @@ import {
   ValidationError,
 } from './errors.ts';
 
-export type ErrorOutcome = 'client_error' | 'server_error' | 'timeout';
+export type ErrorOutcome =
+  | 'client_error'
+  | 'server_error'
+  | 'timeout'
+  | 'assertion_failed';
 
 export type ErrorClassification = {
   readonly statusCode: number;
@@ -63,7 +67,12 @@ const publicError = (
   outcome: outcomeOf(error, statusCode),
 });
 
+// Matched by name because this leaf cannot import the core. Node's assert module throws the same name, which is also a broken assumption.
+export const isAssertionFailure = (error: unknown): boolean =>
+  error instanceof Error && error.name === 'AssertionError';
+
 const outcomeOf = (error: unknown, statusCode: number): ErrorOutcome => {
+  if (isAssertionFailure(error)) return 'assertion_failed';
   if (isTimeout(error)) return 'timeout';
   return statusCode < 500 ? 'client_error' : 'server_error';
 };

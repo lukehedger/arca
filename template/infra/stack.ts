@@ -1,28 +1,16 @@
-import { profiles, toDeployableProfile } from '@<project>/config';
-import { Config, Table } from '@<project>/constructs';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { Table } from '@<project>/constructs';
 import { type App, CfnOutput, Stack, type StackProps } from 'aws-cdk-lib';
 import { AttributeType } from 'aws-cdk-lib/aws-dynamodb';
 
-export type ConfigEnvironment = 'production' | 'test';
-
 export type AppStackProps = StackProps & {
-  readonly configEnvironment: ConfigEnvironment;
   readonly deletionProtection: boolean;
 };
-
-const CONFIG_ENVIRONMENTS = join(
-  import.meta.dirname,
-  '../packages/config/environments',
-);
 
 export class AppStack extends Stack {
   constructor(scope: App, id: string, props: AppStackProps) {
     super(scope, id, props);
 
     const state = this.provisionState(props);
-    this.provisionConfig(props);
 
     // The environment tool reads this output to point the integration tests at the table.
     new CfnOutput(this, 'StateTableName', { value: state.tableName });
@@ -34,25 +22,6 @@ export class AppStack extends Stack {
       partitionKey: { name: 'PK', type: AttributeType.STRING },
       sortKey: { name: 'SK', type: AttributeType.STRING },
       tableName: `${this.stackName}-state`,
-    });
-  }
-
-  private provisionConfig(props: AppStackProps): Config {
-    return new Config(this, 'RuntimeConfig', {
-      applicationName: this.stackName,
-      profiles: profiles.map((profile) =>
-        toDeployableProfile(
-          profile,
-          readFileSync(
-            join(
-              CONFIG_ENVIRONMENTS,
-              props.configEnvironment,
-              `${profile.name}.json`,
-            ),
-            'utf8',
-          ),
-        ),
-      ),
     });
   }
 }

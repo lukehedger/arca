@@ -11,7 +11,7 @@ This repository holds two implementations. The new implementation lives in `<app
 
 Paths and commands in this file, ARCHITECTURE.md and DOMAIN.md are relative to `<app-dir>/`. The repository root in these documents means `<app-dir>/`. Open Claude Code in `<app-dir>/`, so it loads the agent, settings, rules and commands in `<app-dir>/.claude/`.
 
-The one exception is `.github/`. GitHub reads workflows, CODEOWNERS and the PR template only at the top of the repository, so they live there. The workflows for this implementation are `.github/workflows/<app-dir>-*.yml`. They run from `<app-dir>/` and trigger only on changes inside it.
+The one exception is `.github/`. GitHub reads workflows, CODEOWNERS and the Copilot instructions only at the top of the repository, so they live there. The workflows for this implementation are `.github/workflows/<app-dir>-*.yml`. They run from `<app-dir>/` and trigger only on changes inside it.
 
 [docs/migration-plan.md](docs/migration-plan.md) holds the assessment of the previous implementation and the plan to replace it.
 <!-- end -->
@@ -56,22 +56,6 @@ The wren plugin refuses destructive Git and file commands and every AWS CLI call
 
 **[SHOULD]** When you change the shell or `infra/`, also run the integration tests in a disposable environment. `bun env:deploy` deploys a stack named after the current branch, `bun env:test` runs the integration tests against it and `bun env:destroy` deletes it. Ask the user before you run them, because they change AWS. CI runs the same three steps on every pull request.
 
-## Pull requests
-
-**[MUST]** Follow the PR template in `.github/PULL_REQUEST_TEMPLATE.md` at the top of the repository. Every PR needs a title with the primary change, a description of what changed and why, the verification method and the review focus. Include the ticket key in the title when there is one.
-
-Write the PR body as plain prose. Do not add markdown headings, bullet-only descriptions or a generated-by footer.
-
-## Runtime configuration
-
-The JSON files in `packages/config/environments/` are live AppConfig profiles. A merge to `main` deploys them to production. Each deploy replaces the whole profile, so a value changed directly in AppConfig is reverted when a stale file deploys.
-
-**[MUST]** Never edit `environments/production/*.json` on your own initiative. If a task seems to need it, say so and let the user decide.
-
-**[MUST]** If a production config file is in your changes, warn the user before you push or open a PR. Name the file. State that merging makes it live in production. List the keys added, changed and removed with old and new values. State that any key missing from the file is dropped from live AppConfig and that you cannot see live AppConfig to confirm the file is complete. Ask the user to check it against live AppConfig before merging.
-
-**[SHOULD]** Raise a production config change as its own PR, never bundled with code.
-
 ## Security
 
 **[MUST]** Never commit API keys, secrets or credentials.
@@ -96,15 +80,6 @@ A comment that needs a paragraph means one of two things. Either the code is too
 
 Stay inside the scope of the task. Work you notice along the way (a latent bug, a rough abstraction, a missing test, dead code) does not get fixed in the same change. Mention it in your closing summary.
 
-**[MUST]** Every `TODO` carries a ticket key: `// TODO(PROJ-1234): remove the fallback once all clients are migrated.` A bare `TODO`, or one tagged with a name or a date, is debt that nobody owns.
-
 **[SHOULD]** Use `TODO`s sparingly. Only findings with real consequences if forgotten earn one.
 
-At the end of the change, once the request is built and verified:
-
-1. List the out-of-scope findings worth tracking, with one line of reasoning each.
-2. Ask the user whether they want a `TODO` for each one.
-3. For each one accepted, offer to create a ticket. The ticket names the file, what the `TODO` marks and requires the `TODO` to be removed as part of the work.
-4. Add the comment with the ticket key.
-
-If the user declines, add nothing.
+At the end of the change, once the request is built and verified, list the out-of-scope findings worth tracking, with one line of reasoning each. Add a `TODO` for one only when the user asks.
