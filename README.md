@@ -18,7 +18,7 @@ Open Claude Code in your project directory and paste:
 Bootstrap this project with arca: clone https://github.com/lukehedger/arca to a temporary directory and follow its CLAUDE.md.
 ```
 
-arca copies the template with `scripts/bootstrap.ts`, then helps you complete `DOMAIN.md` and builds the core that `DOMAIN.md` describes. wren, the coding agent, builds the shell of your application based on `ARCHITECTURE.md`.
+arca helps you complete `DOMAIN.md` based on your domain. wren, the coding agent, builds the core and shell of your application based on `ARCHITECTURE.md`.
 
 ## agents 
 
@@ -28,19 +28,15 @@ arca copies the template with `scripts/bootstrap.ts`, then helps you complete `D
 
 ### fitness
 
-The architectural framework is preserved via executable fitness functions, such as dependency rules that fail CI when a layer reaches past its neighbour, a lint that bans I/O, clocks and randomness in core/, a check that DOMAIN.md and the code use the same names, a property test that runs for every invariant and mutation tests on the core. A test in each project proves the lint rules still fail each violation.
-
-### disposable environments
-
-Every environment is an instance of one stack, named after the environment. `bun env:deploy` deploys a stack for the current branch, `bun env:test` runs the integration tests against it and `bun env:destroy` deletes it. CI runs the same three steps on every pull request.
-
-### example
-
-`examples/account/` is a vertical slice through every layer of the request pipeline for both persistence modes: a ledger account with a handler, router, adapter, gate, core, store and an integration test that runs them against DynamoDB. Bootstrapping uses its core as the reference shape.
+The architectural framework is preserved via executable fitness functions, such as dependency rules that fail CI when a layer reaches past its neighbour, a lint that bans I/O in core/, a check that DOMAIN.md and the code use the same names, a property test for every invariant and mutation tests on the core.
 
 ### commands
 
 - `/ship` - opens a pull request with auto-merge enabled, then addresses review comments and failed checks until it is clean.
+
+### attribution
+
+Claude Code adds no attribution to commits or pull requests. `.claude/settings.json` sets both `attribution` values to an empty string.
 
 ### status line
 
@@ -58,8 +54,6 @@ The top 3 common mistakes that make codebases unmaintainable as they scale over 
 
 If you are migrating from an existing architecture to arca then your first step is ask your agents to plan the migration. This typically involves creating a folder in your codebase to isolate the arca version of your application, building until you reach 100% feature parity and deciding on a traffic-shifting strategy.
 
-The bootstrap places the workflows at the repository root, because GitHub reads them only there. Each one is named after the folder, runs from it and triggers only on changes inside it. The bootstrap never overwrites an existing file. It stops and lists each conflict, such as an existing CODEOWNERS, for you to merge.
-
 As part of the migration plan, the agent can perform an assessment of your current architecture vs the target across the following aspects:
 
 - Architecture and codebase structure
@@ -70,10 +64,6 @@ As part of the migration plan, the agent can perform an assessment of your curre
 - Tooling
 - Documentation and agentic guides
 
-## testing arca
-
-Run `bun install`, then `bun run test`. It bootstraps the four profiles (new project or migration, event sourcing or CRUD) and verifies each fresh copy. It then lays the account example over each one and runs `bun verify` and `bun mutation`. Last, it applies deliberate architecture, domain and concurrency breakages and checks that each one fails `bun verify` for the right reason.
-
 ## extending
 
 arca can be extended to bundle your org's standards and tools. Just fork it and get your agent to extend with things like:
@@ -81,3 +71,7 @@ arca can be extended to bundle your org's standards and tools. Just fork it and 
 - skill to read and write jira tickets
 - integrate with internal model gateway
 - support for agents other than Claude Code
+
+## example
+
+`examples/account/` is a vertical slice through every layer of the request pipeline for both persistence modes: a ledger account with a handler, router, adapter, gate, core and store.

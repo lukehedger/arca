@@ -6,9 +6,9 @@ import {
   AssertionError,
   decide,
   evolve,
-} from '../src/index.ts';
+} from '../index.ts';
 // if: crud
-import { type Account, AssertionError, decide } from '../src/index.ts';
+import { type Account, AssertionError, decide } from '../index.ts';
 // end
 
 const open = (balance: number): Account => ({ status: 'open', balance });

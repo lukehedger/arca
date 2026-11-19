@@ -5,7 +5,7 @@ import {
   type Profile,
   renderFile,
   resolveBlocks,
-} from './template.ts';
+} from './bootstrap.ts';
 
 const greenfield: Profile = {
   name: 'orders',
@@ -105,8 +105,8 @@ describe('destinationOf', () => {
     expect(destinationOf('.github/workflows/ci.yml', greenfield)).toBe(
       '.github/workflows/ci.yml',
     );
-    expect(destinationOf('core/src/index.ts', greenfield)).toBe(
-      'core/src/index.ts',
+    expect(destinationOf('core/index.ts', greenfield)).toBe(
+      'core/index.ts',
     );
   });
 

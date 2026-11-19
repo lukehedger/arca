@@ -7,7 +7,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   type AccountsHandlerDeps,
   makeHandler,
-} from '../src/accounts/handler.ts';
+} from '../accounts/handler.ts';
 import { commandEvent, lambdaContext } from './api-event.ts';
 
 type ExecuteCommand = AccountsHandlerDeps['executeCommand'];

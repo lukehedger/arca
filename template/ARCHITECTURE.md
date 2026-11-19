@@ -24,7 +24,7 @@ These properties let an agent verify its own work and reach near-deterministic o
 
 ### One stack definition, any number of instances
 
-All application infrastructure lives in one CDK stack definition. Every environment is an instance of it: production, staging and each disposable environment for a branch or an agent. Instances differ through config, account context and the environment name only, never through per-environment infrastructure. `ENVIRONMENT_NAME` sets the stack name and every resource name starts with it, so two instances in one account never collide. One definition keeps each deployment atomic. It also means a disposable environment runs the same infrastructure as production. Internal tools with no application routes may have their own stack. Settings AWS holds once per account and region, such as API Gateway's CloudWatch role, live in `infra/src/account-stack.ts`, which every instance in the account shares.
+All application infrastructure lives in one CDK stack definition. Every environment is an instance of it: production, staging and each disposable environment for a branch or an agent. Instances differ through config, account context and the environment name only, never through per-environment infrastructure. `ENVIRONMENT_NAME` sets the stack name and every resource name starts with it, so two instances in one account never collide. One definition keeps each deployment atomic. It also means a disposable environment runs the same infrastructure as production. Internal tools with no application routes may have their own stack. Settings AWS holds once per account and region, such as API Gateway's CloudWatch role, live in `infra/account-stack.ts`, which every instance in the account shares.
 
 ### Handlers stay thin
 
@@ -74,11 +74,11 @@ The same state and command always produce the same decision. The core reads no c
 
 ### The core asserts what must never happen
 
-The core checks its negative space with `assert` and `unreachable` from `core/src/assert.ts`. Both throw `AssertionError`. Never catch it to carry on. The gate then persists nothing and the shell responds with a 500.
+The core checks its negative space with `assert` and `unreachable` from `core/assert.ts`. Both throw `AssertionError`. Never catch it to carry on. The gate then persists nothing and the shell responds with a 500.
 
 ### The code and DOMAIN.md share one vocabulary
 
-`core/src/vocabulary.ts` declares every command, event, status and invariant name that DOMAIN.md defines. Derive the core's name unions from it. Never redeclare a name as a string literal elsewhere. The domain drift fitness function fails when a name exists on one side only, so a change to the model updates both in the same change.
+`core/vocabulary.ts` declares every command, event, status and invariant name that DOMAIN.md defines. Derive the core's name unions from it. Never redeclare a name as a string literal elsewhere. The domain drift fitness function fails when a name exists on one side only, so a change to the model updates both in the same change.
 
 ### Reliability comes from observability, not retry machinery
 
@@ -117,6 +117,8 @@ A durable execution that exhausts its retries records FAILED instead of throwing
 - `infra/` - the CDK app
 - `tools/` - repo-internal CLIs that agents run: the fitness functions, the disposable environment tool and the status line
 - `docs/` - strategy documents and agent design
+
+Each top-level directory holds its modules directly, with no `src/` directory between. A handler lives at `api/<resource>/handler.ts`, the core model at `core/<entity>.ts` and the stack at `infra/stack.ts`. A package in `packages/` keeps its own `src/` and `tests/`.
 
 ## Stack
 
@@ -166,3 +168,4 @@ Each row names the check that catches the anti-pattern. A row marked review has 
 | An invariant without a property that runs, such as a skipped or commented-out one             | Fitness functions: invariant coverage                                                                                            |
 | Core tests that still pass when the core's behaviour changes                                  | Mutation tests                                                                                                                   |
 | An `AssertionError` caught so the code can carry on                                           | Review                                                                                                                           |
+| A `src/` directory inside `api/`, `async/`, `core/` or `infra/`                               | Fitness functions: layout                                                                                                        |

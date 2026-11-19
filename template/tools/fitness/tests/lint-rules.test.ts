@@ -18,99 +18,99 @@ const root = join(import.meta.dirname, '../../..');
 const probes: readonly Probe[] = [
   {
     rule: 'the core calls Math.random',
-    directory: 'core/src',
+    directory: 'core',
     source: 'export const roll = (): number => Math.random();',
     expected: 'cannot call Math.random',
   },
   {
     rule: 'the core reads Math with a computed key',
-    directory: 'core/src',
+    directory: 'core',
     source:
       "const key = 'random';\nexport const roll = (): unknown => Math[key];",
     expected: 'A computed key can reach Math.random',
   },
   {
     rule: 'the core aliases Math',
-    directory: 'core/src',
+    directory: 'core',
     source:
       'const { random } = Math;\nexport const roll = (): number => random();',
     expected: 'An alias of Math can reach Math.random',
   },
   {
     rule: 'the core reads the clock',
-    directory: 'core/src',
+    directory: 'core',
     source: 'export const now = (): number => Date.now();',
     expected: 'global variable Date',
   },
   {
     rule: 'the core reads a high-resolution clock',
-    directory: 'core/src',
+    directory: 'core',
     source: 'export const now = (): number => performance.now();',
     expected: 'global variable performance',
   },
   {
     rule: 'the core generates an identifier',
-    directory: 'core/src',
+    directory: 'core',
     source: 'export const id = (): string => crypto.randomUUID();',
     expected: 'global variable crypto',
   },
   {
     rule: 'the core reaches a global through globalThis',
-    directory: 'core/src',
+    directory: 'core',
     source: 'export const roll = (): number => globalThis.Math.random();',
     expected: 'global variable globalThis',
   },
   {
     rule: 'the core reads the environment',
-    directory: 'core/src',
+    directory: 'core',
     source: "export const flag = (): unknown => process.env['FLAG'];",
     expected: 'global variable process',
   },
   {
     rule: 'the core schedules work',
-    directory: 'core/src',
+    directory: 'core',
     source:
       'export const later = (): unknown => setTimeout(() => undefined, 1);',
     expected: 'global variable setTimeout',
   },
   {
     rule: 'the core imports a Node.js module',
-    directory: 'core/src',
+    directory: 'core',
     source:
       "import { readFile } from 'node:fs/promises';\nexport const read = readFile;",
     expected: 'Node.js builtin module',
   },
   {
     rule: 'the core imports the store',
-    directory: 'core/src',
+    directory: 'core',
     source:
       "import type { EventLog } from '@<project>/store';\nexport type Log = EventLog<never>;",
     expected: 'The core is pure',
   },
   {
     rule: 'a handler imports the gate',
-    directory: 'api/src',
+    directory: 'api',
     source:
       "import { createEventSourcedGate } from '@<project>/gate';\nexport const gate = createEventSourcedGate;",
     expected: 'A handler only parses, validates, routes and maps the result',
   },
   {
     rule: 'a handler calls an AWS SDK',
-    directory: 'api/src',
+    directory: 'api',
     source:
       "import { DynamoDBClient } from '@aws-sdk/client-dynamodb';\nexport const client = new DynamoDBClient({});",
     expected: 'A handler only parses, validates, routes and maps the result',
   },
   {
     rule: 'a handler imports a package by its path',
-    directory: 'api/src',
+    directory: 'api',
     source:
       "import { registry } from '../../packages/router/src/index.ts';\nexport const routes = registry;",
     expected: 'Import another workspace package by its name',
   },
   {
     rule: 'deployed code uses Bun',
-    directory: 'api/src',
+    directory: 'api',
     source: "export const file = (): unknown => Bun.file('x');",
     expected: 'global variable Bun',
   },
@@ -152,7 +152,7 @@ const probes: readonly Probe[] = [
 ];
 
 const clean = {
-  directory: 'core/src',
+  directory: 'core',
   source:
     'export const clamp = (value: number, limit: number): number =>\n  Math.min(Math.max(0, Math.round(value)), limit);',
 };

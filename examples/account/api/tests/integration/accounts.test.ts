@@ -4,7 +4,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   makeHandler,
   routeAccountCommands,
-} from '../../src/accounts/handler.ts';
+} from '../../accounts/handler.ts';
 import { commandEvent, lambdaContext } from '../api-event.ts';
 
 const tableName = process.env.STATE_TABLE_NAME;

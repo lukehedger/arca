@@ -3,7 +3,7 @@ import {
   MAX_STACK_NAME_LENGTH,
   PROJECT,
   stackNameFor,
-} from '../src/stack-name.ts';
+} from '../stack-name.ts';
 
 describe('stackNameFor', () => {
   test('prefixes the environment name with the project', () => {

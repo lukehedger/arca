@@ -6,13 +6,13 @@ import {
   decide,
   evolve,
   initialState,
-} from '../src/index.ts';
+} from '../index.ts';
 // if: crud
 import {
   type AccountCommand,
   type AccountState,
   decide,
-} from '../src/index.ts';
+} from '../index.ts';
 // end
 
 export type Step = {

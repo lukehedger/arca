@@ -1,5 +1,9 @@
 {
   "agent": "wren",
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "statusLine": {
     "type": "command",
     "command": "bun \"$(git rev-parse --show-toplevel)/<app-root>/tools/status-line/scripts/status-line.ts\""

@@ -8,7 +8,7 @@ The code is the source of truth. Where this document and the code disagree, this
 
 If a feature cannot be expressed within the model, change the model deliberately and update this document in the same change.
 
-Every name in backticks in the command, event, transition, status and invariant tables must match `core/src/vocabulary.ts` exactly. The domain drift fitness function fails when a name exists on one side only.
+Every name in backticks in the command, event, transition, status and invariant tables must match `core/vocabulary.ts` exactly. The domain drift fitness function fails when a name exists on one side only.
 
 ---
 

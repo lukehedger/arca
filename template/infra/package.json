@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./stack-name": "./src/stack-name.ts"
+    "./stack-name": "./stack-name.ts"
   },
   "scripts": {
     "cdk": "cdk",

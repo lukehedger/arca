@@ -14,7 +14,7 @@ export type AppStackProps = StackProps & {
 
 const CONFIG_ENVIRONMENTS = join(
   import.meta.dirname,
-  '../../packages/config/environments',
+  '../packages/config/environments',
 );
 
 export class AppStack extends Stack {

@@ -2,11 +2,11 @@
 
 The system holds money in accounts on an internal ledger. Each account moves through a short lifecycle and its balance can never go below zero. The model keeps the balance as the one quantity that matters and lets only the core change it.
 
-The code is the source of truth. Where this document and the code disagree, this document is stale and must be fixed. The authoritative definitions live in `core/src/account.ts`.
+The code is the source of truth. Where this document and the code disagree, this document is stale and must be fixed. The authoritative definitions live in `core/account.ts`.
 
 If a feature cannot be expressed within the model, change the model deliberately and update this document in the same change.
 
-Every name in backticks in the command, event, transition, status and invariant tables must match `core/src/vocabulary.ts` exactly. The domain drift fitness function fails when a name exists on one side only.
+Every name in backticks in the command, event, transition, status and invariant tables must match `core/vocabulary.ts` exactly. The domain drift fitness function fails when a name exists on one side only.
 
 ---
 
@@ -179,6 +179,6 @@ The `ledger` adapter passes the command to the gate unchanged. A new place to ho
 
 ## 8. Checklist for a new feature
 
-- [ ] Does every new name appear in both this document and `core/src/vocabulary.ts`?
+- [ ] Does every new name appear in both this document and `core/vocabulary.ts`?
 - [ ] Does every new invariant have a property in `core/tests/`?
 - [ ] Does the change keep every movement of money inside the core?

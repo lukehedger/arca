@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 import fc from 'fast-check';
-import type { InvariantName } from '../src/index.ts';
+import type { InvariantName } from '../index.ts';
 
 // The test name carries the invariant. The fitness functions count it only when the property ran and passed.
 export const invariant = <T>(

@@ -13,10 +13,10 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
-import { applyExample } from './example.ts';
-import { type Profile, SCRIPT_PLACEHOLDERS, type State } from './template.ts';
+import { type Profile, renderFile, SCRIPT_PLACEHOLDERS, type State } from './bootstrap.ts';
 
 const BOOTSTRAP = join(import.meta.dirname, 'bootstrap.ts');
+const EXAMPLES = join(import.meta.dirname, '../examples');
 const NAME = 'sample';
 const OWNER = '@org/team';
 const APP_DIR = 'next';
@@ -79,6 +79,23 @@ const listFiles = async (directory: string): Promise<string[]> => {
     }),
   );
   return nested.flat();
+};
+
+// Lays an example over a bootstrapped project. The example replaces any file it also holds.
+const applyExample = async (name: string, appRoot: string, profile: Profile): Promise<void> => {
+  const source = join(EXAMPLES, name);
+  for (const path of await listFiles(source)) {
+    const file = relative(source, path);
+    if (file === 'README.md') continue;
+    const content = renderFile(file, await readFile(path, 'utf8'), profile);
+    const destination = join(appRoot, file);
+    if (content === undefined) {
+      await rm(destination, { force: true });
+      continue;
+    }
+    await mkdir(dirname(destination), { recursive: true });
+    await writeFile(destination, content);
+  }
 };
 
 const bootstrapArgs = (target: string, profile: ProfileCase): string[] => [
@@ -170,6 +187,11 @@ const checkAutomation = async (root: string, profile: ProfileCase): Promise<void
   }
 
   const settings = await readFile(join(root, appRoot, '.claude/settings.json'), 'utf8');
+  const { attribution } = workflowSchemaOf(JSON.parse(settings));
+  check(
+    JSON.stringify(attribution) === JSON.stringify({ commit: '', pr: '' }),
+    'The Claude Code settings let it add attribution to commits or pull requests',
+  );
   const statusLine = /show-toplevel\)\/([^"\\]+)/.exec(settings)?.[1] ?? '';
   check(existsSync(join(root, statusLine)), `The status line command points at ${statusLine}, which does not exist`);
 };
@@ -177,6 +199,8 @@ const checkAutomation = async (root: string, profile: ProfileCase): Promise<void
 type Breakage = {
   readonly name: string;
   readonly files: readonly string[];
+  // Directories the breakage creates, which the restore deletes.
+  readonly created?: readonly string[];
   readonly expected: string;
   readonly apply: (appRoot: string) => Promise<void>;
 };
@@ -195,7 +219,7 @@ const NEW_INVARIANT = 'overdraft-limit-respected';
 
 const addInvariant = async (appRoot: string): Promise<void> => {
   await edit(
-    join(appRoot, 'core/src/vocabulary.ts'),
+    join(appRoot, 'core/vocabulary.ts'),
     "'closed-account-is-final',",
     `'closed-account-is-final',\n    '${NEW_INVARIANT}',`,
   );
@@ -209,21 +233,21 @@ const addInvariant = async (appRoot: string): Promise<void> => {
 const breakagesFor = (state: State): readonly Breakage[] => [
   {
     name: 'architecture: a handler imports the gate',
-    files: ['api/src/accounts/handler.ts'],
+    files: ['api/accounts/handler.ts'],
     expected: 'A handler only parses, validates, routes and maps the result',
     apply: (appRoot) =>
       append(
-        join(appRoot, 'api/src/accounts/handler.ts'),
+        join(appRoot, 'api/accounts/handler.ts'),
         `import type { AccountGate } from '@${NAME}/gate';\nexport type LeakedGate = AccountGate;`,
       ),
   },
   {
     name: 'architecture: the core imports the store',
-    files: ['core/src/account.ts'],
+    files: ['core/account.ts'],
     expected: 'The core is pure',
     apply: (appRoot) =>
       append(
-        join(appRoot, 'core/src/account.ts'),
+        join(appRoot, 'core/account.ts'),
         `import type { createDocumentClient } from '@${NAME}/store';\nexport type Leaked = typeof createDocumentClient;`,
       ),
   },
@@ -235,21 +259,31 @@ const breakagesFor = (state: State): readonly Breakage[] => [
       edit(join(appRoot, 'packages/schema/src/variant.ts'), "['ledger'] as const", "['ledger', 'acme'] as const"),
   },
   {
+    name: 'layout: a top-level directory holds a src directory',
+    files: [],
+    created: ['core/src'],
+    expected: 'Layout: `core/src/` exists',
+    apply: async (appRoot) => {
+      await mkdir(join(appRoot, 'core/src'));
+      await writeFile(join(appRoot, 'core/src/rules.ts'), 'export const limit = 1;\n');
+    },
+  },
+  {
     name: 'determinism: the core calls Math.random',
-    files: ['core/src/account.ts'],
+    files: ['core/account.ts'],
     expected: 'cannot call Math.random',
     apply: (appRoot) =>
       edit(
-        join(appRoot, 'core/src/account.ts'),
+        join(appRoot, 'core/account.ts'),
         "assert(balance >= 0, 'Balance is negative');",
         "assert(balance >= Math.random() - 1, 'Balance is negative');",
       ),
   },
   {
     name: 'determinism: the core reads the clock',
-    files: ['core/src/account.ts'],
+    files: ['core/account.ts'],
     expected: 'global variable Date',
-    apply: (appRoot) => append(join(appRoot, 'core/src/account.ts'), 'export const decidedAt = (): number => Date.now();'),
+    apply: (appRoot) => append(join(appRoot, 'core/account.ts'), 'export const decidedAt = (): number => Date.now();'),
   },
   {
     name: 'domain: DOMAIN.md names an invariant the vocabulary lacks',
@@ -264,14 +298,14 @@ const breakagesFor = (state: State): readonly Breakage[] => [
   },
   {
     name: 'domain: the vocabulary declares a command DOMAIN.md lacks',
-    files: ['core/src/vocabulary.ts'],
+    files: ['core/vocabulary.ts'],
     expected: 'declares command `freeze_account` but DOMAIN.md',
     apply: (appRoot) =>
-      edit(join(appRoot, 'core/src/vocabulary.ts'), "'close_account',", "'close_account',\n    'freeze_account',"),
+      edit(join(appRoot, 'core/vocabulary.ts'), "'close_account',", "'close_account',\n    'freeze_account',"),
   },
   {
     name: 'domain: an invariant whose property is commented out',
-    files: ['core/src/vocabulary.ts', 'DOMAIN.md', 'core/tests/account-invariants.test.ts'],
+    files: ['core/vocabulary.ts', 'DOMAIN.md', 'core/tests/account-invariants.test.ts'],
     expected: `invariant \`${NEW_INVARIANT}\` has no property test that runs`,
     apply: async (appRoot) => {
       await addInvariant(appRoot);
@@ -342,13 +376,14 @@ const proveBreakageFails = async (appRoot: string, breakage: Breakage): Promise<
     );
   } finally {
     for (const [file, content] of originals) await writeFile(join(appRoot, file), content);
+    for (const directory of breakage.created ?? []) await rm(join(appRoot, directory), { recursive: true, force: true });
   }
 };
 
 const synthEnvironments = async (appRoot: string): Promise<void> => {
   const outdir = await mkdtemp(join(tmpdir(), 'arca-synth-'));
   for (const environment of ['pr-1', 'pr-2']) {
-    await mustPass(`Synthesising ${environment}`, ['bun', 'src/app.ts'], join(appRoot, 'infra'), {
+    await mustPass(`Synthesising ${environment}`, ['bun', 'app.ts'], join(appRoot, 'infra'), {
       CDK_OUTDIR: join(outdir, environment),
       CDK_DEFAULT_ACCOUNT: '123456789012',
       CDK_DEFAULT_REGION: 'eu-west-1',
