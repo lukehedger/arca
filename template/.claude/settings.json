@@ -4,6 +4,20 @@
     "commit": "",
     "pr": ""
   },
+  "enabledPlugins": {
+    "wren@<project>": true
+  },
+  "extraKnownMarketplaces": {
+    "<project>": {
+      "source": {
+        "source": "directory",
+        "path": "."
+      }
+    }
+  },
+  "worktree": {
+    "baseRef": "fresh"
+  },
   "statusLine": {
     "type": "command",
     "command": "bun \"$(git rev-parse --show-toplevel)/<app-root>/tools/status-line/scripts/status-line.ts\""

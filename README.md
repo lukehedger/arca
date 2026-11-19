@@ -34,6 +34,14 @@ The architectural framework is preserved via executable fitness functions, such 
 
 - `/ship` - opens a pull request with auto-merge enabled, then addresses review comments and failed checks until it is clean.
 
+### worktrees
+
+wren never changes the checkout you opened. The wren plugin refuses every change in the primary checkout until wren enters a Claude Code worktree. Before each new worktree, it fetches `origin/main`. If the fetch fails, it refuses the worktree.
+
+### shell commands
+
+The wren plugin checks every shell command before it runs. It refuses `git reset --hard`, a forced `git clean`, a force push, `git branch -D` and a forced recursive removal of the root, home or parent directory. It asks you before a recursive removal, `sudo`, `chmod 777` or a recursive `chown`. Without an interactive UI, it refuses them. It refuses every AWS CLI call outside the read-only list in the `aws` skill, including a DynamoDB scan and a secret value read. It looks through shell wrappers, chained commands and command substitutions.
+
 ### attribution
 
 Claude Code adds no attribution to commits or pull requests. `.claude/settings.json` sets both `attribution` values to an empty string.

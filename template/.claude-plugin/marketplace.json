@@ -1,0 +1,12 @@
+{
+  "name": "<project>",
+  "description": "<Project>'s Claude Code plugins",
+  "owner": { "name": "<owner>" },
+  "plugins": [
+    {
+      "name": "wren",
+      "description": "Makes every change land in a worktree",
+      "source": "./tools/wren"
+    }
+  ]
+}
