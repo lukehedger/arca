@@ -1,7 +1,7 @@
 import { ConflictError, DecisionRejectedError } from '@<project>/errors';
 import type { AccountGate, AccountResult } from '@<project>/gate';
 import { describe, expect, test } from 'bun:test';
-import { ledger } from '../src/index.ts';
+import { ledger } from '../index.ts';
 
 const gateReturning = (result: AccountResult): AccountGate => ({
   execute: async () => result,

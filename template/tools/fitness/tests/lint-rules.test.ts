@@ -105,7 +105,7 @@ const probes: readonly Probe[] = [
     rule: 'a handler imports a package by its path',
     directory: 'api',
     source:
-      "import { registry } from '../../packages/router/src/index.ts';\nexport const routes = registry;",
+      "import { registry } from '../../packages/router/index.ts';\nexport const routes = registry;",
     expected: 'Import another workspace package by its name',
   },
   {
@@ -116,35 +116,35 @@ const probes: readonly Probe[] = [
   },
   {
     rule: 'the router skips the adapters',
-    directory: 'packages/router/src',
+    directory: 'packages/router',
     source:
       "import type { EventSourcedGate } from '@<project>/gate';\nexport type Gate = EventSourcedGate<never, never, never, never>;",
     expected: 'The router only resolves the adapter for a variant',
   },
   {
     rule: 'an adapter skips the gate',
-    directory: 'packages/adapters/src',
+    directory: 'packages/adapters',
     source:
       "import { createDocumentClient } from '@<project>/store';\nexport const client = createDocumentClient;",
     expected: 'An adapter translates a request into a command',
   },
   {
     rule: 'the gate calls upward',
-    directory: 'packages/gate/src',
+    directory: 'packages/gate',
     source:
       "import { registry } from '@<project>/router';\nexport const routes = registry;",
     expected: 'The gate loads state from the store',
   },
   {
     rule: 'the store imports the core',
-    directory: 'packages/store/src',
+    directory: 'packages/store',
     source:
       "import { vocabulary } from '@<project>/core';\nexport const names = vocabulary;",
     expected: 'The store persists state',
   },
   {
     rule: 'a leaf package imports another package',
-    directory: 'packages/schema/src',
+    directory: 'packages/schema',
     source:
       "import { classifyError } from '@<project>/errors';\nexport const classify = classifyError;",
     expected: 'This package is a leaf',

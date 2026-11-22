@@ -1,6 +1,6 @@
 // if: event-sourcing
 import { describe, expect, test } from 'bun:test';
-import type { EventLog } from '../../src/index.ts';
+import type { EventLog } from '../../index.ts';
 
 export type ContractEvent = {
   readonly type: 'incremented';

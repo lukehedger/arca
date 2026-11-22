@@ -1,7 +1,7 @@
 // if: event-sourcing
 import { describe, expect, test } from 'bun:test';
 import { randomUUID } from 'node:crypto';
-import { createInMemoryEventLog } from '../src/index.ts';
+import { createInMemoryEventLog } from '../index.ts';
 import {
   type ContractEvent,
   describeEventLogContract,

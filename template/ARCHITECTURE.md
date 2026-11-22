@@ -118,7 +118,7 @@ A durable execution that exhausts its retries records FAILED instead of throwing
 - `tools/` - repo-internal CLIs that agents run: the fitness functions, the disposable environment tool and the status line
 - `docs/` - strategy documents and agent design
 
-Each top-level directory holds its modules directly, with no `src/` directory between. A handler lives at `api/<resource>/handler.ts`, the core model at `core/<entity>.ts` and the stack at `infra/stack.ts`. A package in `packages/` keeps its own `src/` and `tests/`.
+Each top-level directory and each package holds its modules directly, with no `src/` directory between. A handler lives at `api/<resource>/handler.ts`, the core model at `core/<entity>.ts`, the stack at `infra/stack.ts` and a package's entry point at `packages/<name>/index.ts`. Tests sit beside the modules in `tests/`.
 
 ## Stack
 
@@ -168,5 +168,5 @@ Each row names the check that catches the anti-pattern. A row marked review has 
 | An invariant without a property that runs, such as a skipped or commented-out one             | Fitness functions: invariant coverage                                                                                                         |
 | Core tests that still pass when the core's behaviour changes                                  | Mutation tests                                                                                                                                |
 | An `AssertionError` caught so the code can carry on                                           | Review                                                                                                                                        |
-| A `src/` directory inside `api/`, `async/`, `core/` or `infra/`                               | Review                                                                                                                                        |
+| A `src/` directory anywhere in the project                                                    | Review                                                                                                                                        |
 | A change made in the primary checkout instead of a worktree                                   | The wren plugin, which refuses every shell command, edit and write that would change the primary checkout. Its unit tests prove each refusal. |

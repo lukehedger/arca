@@ -4,7 +4,7 @@ import { z } from 'zod';
 import {
   createDocumentClient,
   createDynamoDbRecordStore,
-} from '../../src/index.ts';
+} from '../../index.ts';
 import {
   type ContractRecord,
   describeRecordStoreContract,

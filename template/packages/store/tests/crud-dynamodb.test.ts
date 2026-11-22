@@ -14,7 +14,7 @@ import { z } from 'zod';
 import {
   createDynamoDbRecordStore,
   type RecordStoreClient,
-} from '../src/index.ts';
+} from '../index.ts';
 
 const counterSchema = z.object({
   status: z.enum(['open', 'closed']),

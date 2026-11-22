@@ -1,7 +1,7 @@
 // if: crud
 import { createInMemoryRecordStore, type RecordStore } from '@<project>/store';
 import { describe, expect, test } from 'bun:test';
-import { createRecordGate, type Transition } from '../src/index.ts';
+import { createRecordGate, type Transition } from '../index.ts';
 
 type Counter = { readonly status: 'open' | 'closed'; readonly count: number };
 type CounterCommand =

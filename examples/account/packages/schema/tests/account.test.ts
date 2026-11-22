@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { executeAccountCommandEventSchema } from '../src/index.ts';
+import { executeAccountCommandEventSchema } from '../index.ts';
 
 const event = (overrides: Record<string, unknown> = {}) => ({
   pathParameters: { accountId: 'acc-1' },

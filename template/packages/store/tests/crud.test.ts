@@ -1,7 +1,7 @@
 // if: crud
 import { describe, expect, test } from 'bun:test';
 import { randomUUID } from 'node:crypto';
-import { createInMemoryRecordStore } from '../src/index.ts';
+import { createInMemoryRecordStore } from '../index.ts';
 import {
   type ContractRecord,
   describeRecordStoreContract,

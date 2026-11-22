@@ -1,6 +1,6 @@
 // if: crud
 import { describe, expect, test } from 'bun:test';
-import type { RecordStore } from '../../src/index.ts';
+import type { RecordStore } from '../../index.ts';
 
 export type ContractRecord = {
   readonly status: 'open' | 'closed';

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { profiles, toDeployableProfile } from '../src/index.ts';
+import { profiles, toDeployableProfile } from '../index.ts';
 
 const environments = ['test', 'production'] as const;
 

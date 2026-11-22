@@ -140,7 +140,7 @@ const checkRendered = async (root: string, appRoot: string, profile: ProfileCase
   }
 
   const otherMode = profile.state === 'crud' ? 'event-sourcing' : 'crud';
-  for (const path of [`packages/store/src/${otherMode}.ts`, `packages/gate/src/${otherMode}.ts`]) {
+  for (const path of [`packages/store/${otherMode}.ts`, `packages/gate/${otherMode}.ts`]) {
     check(!existsSync(join(appRoot, path)), `${path} belongs to the other mode but was copied`);
   }
 };
@@ -290,10 +290,10 @@ const breakagesFor = (state: State): readonly Breakage[] => [
   },
   {
     name: 'architecture: a new variant has no adapter in the registry',
-    files: ['packages/schema/src/variant.ts'],
-    expected: 'error file="packages/router/src/registry.ts"',
+    files: ['packages/schema/variant.ts'],
+    expected: 'error file="packages/router/registry.ts"',
     apply: (appRoot) =>
-      edit(join(appRoot, 'packages/schema/src/variant.ts'), "['ledger'] as const", "['ledger', 'acme'] as const"),
+      edit(join(appRoot, 'packages/schema/variant.ts'), "['ledger'] as const", "['ledger', 'acme'] as const"),
   },
   {
     name: 'determinism: the core calls Math.random',
@@ -356,30 +356,30 @@ const breakagesFor = (state: State): readonly Breakage[] => [
   state === 'event-sourcing'
     ? {
         name: 'concurrency: the event log yields between its version check and its write',
-        files: ['packages/store/src/event-sourcing.ts'],
+        files: ['packages/store/event-sourcing.ts'],
         expected: '(fail) in-memory event log contract > lets exactly one of two concurrent',
         apply: (appRoot) =>
           edit(
-            join(appRoot, 'packages/store/src/event-sourcing.ts'),
+            join(appRoot, 'packages/store/event-sourcing.ts'),
             'const current = streams.get(streamId) ?? emptyStream;',
             'const current = await read(streamId);',
           ),
       }
     : {
         name: 'concurrency: the record store yields between its version check and its write',
-        files: ['packages/store/src/crud.ts'],
+        files: ['packages/store/crud.ts'],
         expected: '(fail) in-memory record store contract > lets exactly one of two concurrent',
         apply: (appRoot) =>
-          edit(join(appRoot, 'packages/store/src/crud.ts'), 'const current = records.get(id);', 'const current = await read(id);'),
+          edit(join(appRoot, 'packages/store/crud.ts'), 'const current = records.get(id);', 'const current = await read(id);'),
       },
   ...(state === 'event-sourcing'
     ? [
         {
           name: 'concurrency: the gate appends before the core checks the new state',
-          files: ['packages/gate/src/event-sourcing.ts'],
+          files: ['packages/gate/event-sourcing.ts'],
           expected: '(fail) event-sourced gate > appends nothing when projecting the decision fails an assertion',
           apply: async (appRoot: string) => {
-            const path = join(appRoot, 'packages/gate/src/event-sourcing.ts');
+            const path = join(appRoot, 'packages/gate/event-sourcing.ts');
             await edit(path, '    const next = project(state, decision.events);\n', '');
             await edit(path, 'state: next,', 'state: project(state, decision.events),');
           },
