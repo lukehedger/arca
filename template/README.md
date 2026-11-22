@@ -17,15 +17,10 @@ bun verify
 
 ## Commands
 
-| Command                 | Does                                                                         |
-| ----------------------- | ---------------------------------------------------------------------------- |
-| `bun verify`            | Runs lint and format, the type check, the fitness functions and unit tests. |
-| `bun mutation`          | Runs the mutation tests on `core/`.                                          |
-| `bun env:deploy`        | Deploys a disposable environment named after the current branch.            |
-| `bun env:test`          | Runs the integration tests against that environment.                         |
-| `bun env:destroy`       | Deletes that environment.                                                    |
-
-The three `env:` commands change AWS. CI runs them on every pull request.
+| Command        | Does                                                                        |
+| -------------- | --------------------------------------------------------------------------- |
+| `bun verify`   | Runs lint and format, the type check, the fitness functions and unit tests. |
+| `bun mutation` | Runs the mutation tests on `core/`.                                         |
 
 ## Worktrees
 
@@ -46,7 +41,7 @@ The wren plugin refuses destructive Git and file commands, such as a force push 
 | `core/`     | The functional core: state, transitions and domain rules                                    |
 | `packages/` | The shell layers and shared libraries, one workspace package each                           |
 | `infra/`    | The CDK app and stack                                                                       |
-| `tools/`    | The fitness functions, the disposable environment tool, the status line and the wren plugin |
+| `tools/`    | The fitness functions, the status line and the wren plugin                                  |
 | `docs/`     | Strategy documents                                                                          |
 
 ## Documents

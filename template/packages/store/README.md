@@ -22,7 +22,7 @@ A record row holds `status`, `version`, `updatedAt` and `value`. The status sits
 
 ## Contract
 
-Every implementation passes the same contract suite in `tests/contract/`. The in-memory implementation runs it in the unit tests. DynamoDB runs it in `tests/integration/` against the table of a disposable environment, through `bun env:test`. The suite includes two concurrent conditional writes at the same version: exactly one wins and the other returns a conflict. A change that lets both succeed fails the suite.
+Every implementation passes the same contract suite in `tests/contract/`. The in-memory implementation runs it in the unit tests. The suite includes two concurrent conditional writes at the same version: exactly one wins and the other returns a conflict. A change that lets both succeed fails the suite.
 
 ## Public API
 

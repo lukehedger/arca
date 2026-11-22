@@ -2,11 +2,6 @@
   "$schema": "https://turborepo.dev/schema.json",
   "tasks": {
     "mutation": {},
-    "test:integration": {
-      "cache": false,
-      "env": ["STATE_TABLE_NAME"],
-      "passThroughEnv": ["AWS_*", "HOME"]
-    },
     "test:unit": {
       "dependsOn": ["^test:unit"]
     }

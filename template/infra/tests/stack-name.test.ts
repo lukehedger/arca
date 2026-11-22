@@ -7,7 +7,7 @@ import {
 
 describe('stackNameFor', () => {
   test('prefixes the environment name with the project', () => {
-    expect(stackNameFor('pr-42')).toBe(`${PROJECT}-pr-42`);
+    expect(stackNameFor('dev')).toBe(`${PROJECT}-dev`);
   });
 
   test.each(['', 'PR-42', 'feature/login', 'pr--42', '-pr', 'pr-'])(

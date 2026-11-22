@@ -16,15 +16,13 @@ Each check proves one thing. Use the cheapest check that proves it. Run checks f
 | Unit tests                | Each specified example produces the expected decision or response.                                                 | Every change                  |
 | Infrastructure assertions | The synthesised stack has the resources and settings its tests assert.                                             | Every change                  |
 | Mutation tests            | The core's tests fail when the core's behaviour changes.                                                           | Core changes and before merge |
-| Integration tests         | The shell works against real cloud services in a disposable environment.                                           | Every pull request, in CI     |
 | Production signals        | Alarms, failure metrics and SLOs show the system behaves in production.                                            | Continuously                  |
 
 ## Rules
 
 - **Test the core with plain data.** State and a command go in. A decision comes out. A core test needs no fakes.
-- **Fake only the layer below.** A shell test injects inline fakes for the layer it calls. Integration tests use real services, never local emulators.
-- **Run integration tests in a disposable environment.** They live in each package's `tests/integration/`. `bun env:deploy` deploys a stack named after the branch, `bun env:test` runs them against it and `bun env:destroy` deletes it. CI runs the same three steps on every pull request and destroys the stack even when the tests fail.
-- **Write one contract per interface.** A suite that every implementation passes, such as the store contract, runs in memory in the unit tests and against the real service in the integration tests.
+- **Fake only the layer below.** A shell test injects inline fakes for the layer it calls.
+- **Write one contract per interface.** A suite that every implementation passes, such as the store contract, runs against each implementation in the unit tests.
 - **Name the invariant.** Each property test names the DOMAIN.md invariant it checks. An invariant without a property fails a fitness function.
 - **Assert the negative space.** State what must never happen at the start and end of each core function. A failed assertion throws and is never caught to carry on. The gate then persists nothing, so the state stays as it was.
 - **Kill the mutants.** A surviving mutant is a change in behaviour that no test notices. Add the test that kills it.

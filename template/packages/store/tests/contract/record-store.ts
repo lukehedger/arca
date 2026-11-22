@@ -15,7 +15,7 @@ export type RecordStoreContractDeps = {
 
 const open = (count: number): ContractRecord => ({ status: 'open', count });
 
-// Every RecordStore implementation must pass this suite, the in-memory one in unit tests and DynamoDB in integration tests.
+// Every RecordStore implementation must pass this suite.
 export const describeRecordStoreContract = (
   name: string,
   deps: RecordStoreContractDeps,

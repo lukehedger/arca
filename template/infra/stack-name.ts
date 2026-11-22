@@ -5,7 +5,7 @@ export const PROJECT = '<project>';
 
 const ENVIRONMENT_NAME = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-// One stack per environment name, so a branch environment never replaces another environment in the same account.
+// One stack per environment name, so two environments in one account never replace each other.
 export const stackNameFor = (environment: string): string => {
   if (!ENVIRONMENT_NAME.test(environment)) {
     throw new Error(

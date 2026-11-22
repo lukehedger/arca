@@ -408,7 +408,7 @@ const proveBreakageFails = async (appRoot: string, breakage: Breakage): Promise<
 
 const synthEnvironments = async (appRoot: string): Promise<void> => {
   const outdir = await mkdtemp(join(tmpdir(), 'arca-synth-'));
-  for (const environment of ['pr-1', 'pr-2']) {
+  for (const environment of ['dev', 'acc']) {
     await mustPass(`Synthesising ${environment}`, ['bun', 'app.ts'], join(appRoot, 'infra'), {
       CDK_OUTDIR: join(outdir, environment),
       CDK_DEFAULT_ACCOUNT: '123456789012',

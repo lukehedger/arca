@@ -30,7 +30,7 @@ describe('AppStack', () => {
   });
 
   test('names the table after the stack, so environments in one account stay apart', () => {
-    const names = ['sample-pr-1', 'sample-pr-2'].map((stackName) =>
+    const names = ['sample-dev', 'sample-acc'].map((stackName) =>
       Template.fromStack(
         new AppStack(new App(), stackName, {
           configEnvironment: 'test',
@@ -44,13 +44,7 @@ describe('AppStack', () => {
       names.map(
         (resources) => Object.values(resources)[0]?.Properties.TableName,
       ),
-    ).toEqual(['sample-pr-1-state', 'sample-pr-2-state']);
-  });
-
-  test('outputs the state table name for the integration tests', () => {
-    synth('test').hasOutput('StateTableName', {
-      Value: { Ref: Match.stringLikeRegexp('StateTable') },
-    });
+    ).toEqual(['sample-dev-state', 'sample-acc-state']);
   });
 
   test.each([true, false])(

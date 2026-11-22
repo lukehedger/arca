@@ -18,7 +18,7 @@ const incremented = (by: number): ContractEvent => ({
   by,
 });
 
-// Every EventLog implementation must pass this suite, the in-memory one in unit tests and DynamoDB in integration tests.
+// Every EventLog implementation must pass this suite.
 export const describeEventLogContract = (
   name: string,
   deps: EventLogContractDeps,

@@ -18,13 +18,12 @@ These properties let an agent verify its own work and reach near-deterministic o
 - **Functional core, imperative shell.** Decisions are pure functions of state and input. I/O happens only in the shell.
 - **Schema at the boundaries.** Every input and output is parsed against a schema where it enters or leaves the system.
 - **Negative-space programming.** Illegal states are unrepresentable and unhandled cases fail to compile. Assertions state what must never happen at run time and fail loudly when it does. `.claude/rules/typescript.md` lists the techniques.
-- **Disposable environments.** Any environment can be created and destroyed from code alone. `bun env:deploy`, `bun env:test` and `bun env:destroy` do it for the current branch.
 
 ## Core rules
 
 ### One stack definition, any number of instances
 
-All application infrastructure lives in one CDK stack definition. Every environment is an instance of it: production, staging and each disposable environment for a branch or an agent. Instances differ through config, account context and the environment name only, never through per-environment infrastructure. `ENVIRONMENT_NAME` sets the stack name and every resource name starts with it, so two instances in one account never collide. One definition keeps each deployment atomic. It also means a disposable environment runs the same infrastructure as production. Internal tools with no application routes may have their own stack. Settings AWS holds once per account and region, such as API Gateway's CloudWatch role, live in `infra/account-stack.ts`, which every instance in the account shares.
+All application infrastructure lives in one CDK stack definition. Every environment is an instance of it, such as dev, acc and prod. Instances differ through config, account context and the environment name only, never through per-environment infrastructure. `ENVIRONMENT_NAME` sets the stack name and every resource name starts with it, so two instances in one account never collide. One definition keeps each deployment atomic. It also means every environment runs the same infrastructure as production. Internal tools with no application routes may have their own stack. Settings AWS holds once per account and region, such as API Gateway's CloudWatch role, live in `infra/account-stack.ts`, which every instance in the account shares.
 
 ### Handlers stay thin
 
@@ -115,7 +114,7 @@ A durable execution that exhausts its retries records FAILED instead of throwing
 - `core/` - the functional core: state, transitions and domain rules
 - `packages/` - shared libraries: schema, router, adapters, gate, store, config, telemetry and CDK constructs
 - `infra/` - the CDK app
-- `tools/` - repo-internal CLIs that agents run: the fitness functions, the disposable environment tool and the status line
+- `tools/` - repo-internal CLIs that agents run: the fitness functions and the status line
 - `docs/` - strategy documents and agent design
 
 Each top-level directory and each package holds its modules directly, with no `src/` directory between. A handler lives at `api/<resource>/handler.ts`, the core model at `core/<entity>.ts`, the stack at `infra/stack.ts` and a package's entry point at `packages/<name>/index.ts`. Tests sit beside the modules in `tests/`.
@@ -156,7 +155,7 @@ Each row names the check that catches the anti-pattern. A row marked review has 
 | The core calling the store or performing any other I/O                                        | Biome core rules                                                                                                                              |
 | A clock, random value, identifier or other global read in the core                            | Biome core rules and the determinism plugin. `tools/fitness/tests/lint-rules.test.ts` proves they still fail each violation.                  |
 | Events appended before the core has checked the state they produce                            | Gate unit tests                                                                                                                               |
-| A store write that lets two concurrent writers both succeed                                   | Store contract tests, in memory in the unit tests and against DynamoDB in the integration tests                                               |
+| A store write that lets two concurrent writers both succeed                                   | Store contract tests against the in-memory implementations                                                                                    |
 | A stack or resource name that ignores the environment name                                    | Infrastructure assertions                                                                                                                     |
 | Integration name checks outside the adapter package                                           | Review                                                                                                                                        |
 | Hand-written types or hand-edited OpenAPI that duplicate a schema                             | Review                                                                                                                                        |

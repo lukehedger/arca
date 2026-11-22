@@ -22,7 +22,7 @@ export class Table extends TableV2 {
       billing: Billing.onDemand(),
       encryption: TableEncryptionV2.awsManagedKey(),
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
-      // A protected table outlives its stack. An unprotected one is deleted with its disposable environment.
+      // A protected table outlives its stack. An unprotected one is deleted with it.
       removalPolicy: props.deletionProtection
         ? RemovalPolicy.RETAIN
         : RemovalPolicy.DESTROY,
