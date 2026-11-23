@@ -9,6 +9,7 @@
     "test:unit": "bun test"
   },
   "dependencies": {
+    "@<project>/telemetry": "workspace:*",
     "aws-cdk-lib": "catalog:",
     "constructs": "catalog:",
     "esbuild": "catalog:"

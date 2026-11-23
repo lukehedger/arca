@@ -2,12 +2,6 @@
 
 These rules hold for every change. Several run counter to habit, so do not guess them from experience.
 
-## Reliability
-
-**[MUST]** Reliability is the most important property of the system. Write observable software, just as you write testable software. Treat cost as a measure of architectural efficiency. Know the AWS service limits you depend on. Make fault tolerance a primary concern.
-
-**[MUST]** Availability is the main measure of performance. On critical synchronous paths, keep latency within an agreed budget and track it with an SLO where you can.
-
 ## Simplicity and abstractions
 
 **[SHOULD]** Choose the simplest option. Simple can take longer than easy. It pays off later.
@@ -61,22 +55,8 @@ Follow the Comments section of `CLAUDE.md`. Write each comment as a sentence, wi
 
 **[MUST]** Write them. Keep them short, simple and structured. Aim for confidence, not coverage. Tests live in a `tests/` folder at the root of the package under test, with the `.test.ts` suffix.
 
-## Refactoring
-
-**[SHOULD]** Refactor immediately after you create a feature, in small steps (Tidy First). Writing and reviewing are separate passes. Refactor an established feature only for a measurable gain: lower cost, faster responses or a removed bug risk.
-
-## Pipelines
-
-**[MUST]** Keep the system releasable at all times. Keep pipelines simple and fast. A broken or degraded pipeline alerts and becomes the top priority: pause feature work until it is fixed.
-
 ## Security and tooling
 
 **[MUST]** Never hard-code tokens or passwords. Treat the supply chain as a threat: every dependency is code you run without reading.
 
-**[SHOULD]** Minimise dependencies. Pin exact versions and keep them current with automated updates.
-
-## Code review
-
-A reviewer checks quality and adherence to these rules. On functionality, the reviewer trusts the author and looks only for clear flaws or missed cases. The reviewer resolves a thread once satisfied. The author never does.
-
-Keep each PR small and inside the scope of its ticket. Use the description to tell the reviewer what changed and why.
+**[SHOULD]** Minimise dependencies. Pin exact versions.

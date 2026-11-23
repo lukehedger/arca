@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  classificationOf,
   errorBodySchema,
   mapErrorToResponse,
   NotFoundError,
@@ -43,5 +44,15 @@ describe('mapErrorToResponse', () => {
 
     expect(response.statusCode).toBe(500);
     expect(response.body).not.toContain('orders-table');
+  });
+
+  test('keeps the classification of each response it built for telemetry', () => {
+    const failure = new Error('Balance is negative after the command');
+    failure.name = 'AssertionError';
+    const response = mapErrorToResponse(failure, 'request-4');
+
+    expect(classificationOf(response)?.outcome).toBe('assertion_failed');
+    expect(response.body).not.toContain('assertion');
+    expect(classificationOf({ statusCode: 500, body: '{}' })).toBeUndefined();
   });
 });

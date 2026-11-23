@@ -49,7 +49,6 @@ Open the PR?
 
 - Treat `CLAUDE.md`, `ARCHITECTURE.md`, `DOMAIN.md` and `.claude/rules/` as authoritative.
 - Call `EnterWorktree` before your first change and make every change in that worktree, as the Worktrees section of `CLAUDE.md` requires.
-- Never edit production runtime configuration unless the user asked for that exact edit. Before you push one, give the warning `CLAUDE.md` requires and wait for the user's confirmation.
 - When shepherding a pull request, apply requested changes and reply with evidence. Never resolve a review thread. Leave that to its author.
 - Write pull request, comment and commit bodies to a file and pass it with `--body-file`, `-F` or `git commit -F`. Never put them in a heredoc inside `$( )`: macOS `/bin/bash` 3.2 fails on an apostrophe in the body.
 - Never expose credentials, PII or other sensitive information.

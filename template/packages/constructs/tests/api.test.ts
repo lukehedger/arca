@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { App, Duration, Stack } from 'aws-cdk-lib';
+import { CognitoUserPoolsAuthorizer } from 'aws-cdk-lib/aws-apigateway';
 import { Match, Template } from 'aws-cdk-lib/assertions';
+import { UserPool } from 'aws-cdk-lib/aws-cognito';
 import { Api, LambdaFunction, type Route } from '../index.ts';
 
 const USER_POOL_ARN =
@@ -8,6 +10,7 @@ const USER_POOL_ARN =
 
 const synth = (
   toRoutes: (handler: LambdaFunction) => readonly Route[],
+  { withAuthorizer = true } = {},
 ): Template => {
   // Skipping esbuild keeps synth fast. No test here reads the bundle.
   const app = new App({ context: { 'aws:cdk:bundling-stacks': [] } });
@@ -21,11 +24,20 @@ const synth = (
     memorySize: 512,
     timeout: Duration.seconds(10),
   });
+  // Any API Gateway authoriser works. Cognito is the sample.
+  const authorizer = withAuthorizer
+    ? new CognitoUserPoolsAuthorizer(stack, 'Authoriser', {
+        authorizerName: 'order-api-authoriser',
+        cognitoUserPools: [
+          UserPool.fromUserPoolArn(stack, 'UserPool', USER_POOL_ARN),
+        ],
+      })
+    : undefined;
   new Api(stack, 'OrderApi', {
+    authorizer,
     description: 'Serves orders to authenticated clients',
     name: 'order-api',
     routes: toRoutes(handler),
-    userPoolArns: [USER_POOL_ARN],
   });
   return Template.fromStack(stack);
 };
@@ -38,7 +50,7 @@ const methodFor = (template: Template, httpMethod: string): unknown =>
   );
 
 describe('Api', () => {
-  test('routes a request to its handler behind the Cognito authoriser', () => {
+  test('routes a request to its handler behind the authoriser', () => {
     const template = synth((handler) => [
       {
         authorizationScopes: ['orders/read'],
@@ -115,18 +127,26 @@ describe('Api', () => {
     });
   });
 
-  test('rejects an API with no user pool', () => {
-    const stack = new Stack(new App(), 'TestStack');
+  test('rejects a protected route when the API has no authoriser', () => {
+    expect(() =>
+      synth((handler) => [{ handler, method: 'GET', path: 'orders/{orderId}' }], {
+        withAuthorizer: false,
+      }),
+    ).toThrow(
+      'Route GET orders/{orderId} is protected, so Api order-api needs an authorizer. Mark the route public if it needs none.',
+    );
+  });
 
-    expect(
-      () =>
-        new Api(stack, 'OrderApi', {
-          description: 'Serves orders to authenticated clients',
-          name: 'order-api',
-          routes: [],
-          userPoolArns: [],
-        }),
-    ).toThrow('Api order-api needs at least one Cognito user pool');
+  test('serves public routes without an authoriser', () => {
+    const template = synth(
+      (handler) => [{ handler, method: 'POST', path: 'webhooks', public: true }],
+      { withAuthorizer: false },
+    );
+
+    template.resourceCountIs('AWS::ApiGateway::Authorizer', 0);
+    expect(methodFor(template, 'POST')).toMatchObject({
+      Properties: { AuthorizationType: 'NONE' },
+    });
   });
 
   test('rejects a public route that requires scopes', () => {

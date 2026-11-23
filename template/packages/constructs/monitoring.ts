@@ -1,31 +1,38 @@
+import type { Outcome } from '@<project>/telemetry';
 import { Duration } from 'aws-cdk-lib';
 import {
   Alarm,
   AlarmRule,
   ComparisonOperator,
   CompositeAlarm,
-  Dashboard,
-  GraphWidget,
   type IMetric,
+  Metric,
   TreatMissingData,
 } from 'aws-cdk-lib/aws-cloudwatch';
 import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
-import type { IFunction } from 'aws-cdk-lib/aws-lambda';
+import { FilterPattern, MetricFilter } from 'aws-cdk-lib/aws-logs';
 import type { ITopic } from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
 import type { Api } from './api.ts';
+import type { LambdaFunction } from './lambda-function.ts';
 
 const PERIOD = Duration.minutes(5);
+
+const ASSERTION_FAILED_METRIC = 'AssertionFailed';
+// Typed so the filter fails to compile if telemetry renames the outcome, instead of silently matching nothing.
+const ASSERTION_FAILED_OUTCOME: Outcome = 'assertion_failed';
 
 export type MonitoringProps = {
   readonly alarmTopic: ITopic;
   readonly api: Api;
-  readonly functions: readonly IFunction[];
+  // Keyed by what failed, such as webhook-replay. Each counts failures no Lambda error shows, so one occurrence alarms.
+  readonly failureMetrics?: Readonly<Record<string, IMetric>>;
+  readonly functions: readonly LambdaFunction[];
   readonly name: string;
 };
 
 export class Monitoring extends Construct {
-  public readonly dashboard: Dashboard;
+  public readonly assertionFailedAlarm: Alarm;
   public readonly errorAlarm: CompositeAlarm;
 
   constructor(scope: Construct, id: string, props: MonitoringProps) {
@@ -57,70 +64,62 @@ export class Monitoring extends Construct {
         }),
     );
 
+    // The handler maps a failed assertion to a 500, so only the wide event's outcome tells it apart from any other fault.
+    for (const fn of props.functions) {
+      new MetricFilter(this, `${fn.node.id}AssertionFailedFilter`, {
+        filterPattern: FilterPattern.stringValue(
+          '$.outcome',
+          '=',
+          ASSERTION_FAILED_OUTCOME,
+        ),
+        logGroup: fn.logGroup,
+        metricName: ASSERTION_FAILED_METRIC,
+        metricNamespace: props.name,
+        metricValue: '1',
+      });
+    }
+
+    this.assertionFailedAlarm = new Alarm(this, 'AssertionFailedAlarm', {
+      alarmDescription: `A core assertion failed in ${props.name}, so a state the domain rules out occurred`,
+      alarmName: `${props.name}-assertion-failed`,
+      comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      evaluationPeriods: 1,
+      metric: new Metric({
+        metricName: ASSERTION_FAILED_METRIC,
+        namespace: props.name,
+        period: PERIOD,
+        statistic: 'Sum',
+      }),
+      threshold: 1,
+      treatMissingData: TreatMissingData.NOT_BREACHING,
+    });
+
+    const failureAlarms = Object.entries(props.failureMetrics ?? {}).map(
+      ([failure, metric]) =>
+        new Alarm(this, `${failure}-failure-alarm`, {
+          alarmDescription: `${props.name} recorded a ${failure} failure, which no Lambda error shows`,
+          alarmName: `${props.name}-${failure}-failed`,
+          comparisonOperator:
+            ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+          evaluationPeriods: 1,
+          metric,
+          threshold: 1,
+          treatMissingData: TreatMissingData.NOT_BREACHING,
+        }),
+    );
+
     this.errorAlarm = new CompositeAlarm(this, 'ErrorAlarm', {
       alarmDescription: `${props.name} is failing requests or invocations. The child alarm in ALARM names the source`,
-      alarmRule: AlarmRule.anyOf(serverErrorAlarm, ...functionErrorAlarms),
+      alarmRule: AlarmRule.anyOf(
+        serverErrorAlarm,
+        this.assertionFailedAlarm,
+        ...functionErrorAlarms,
+        ...failureAlarms,
+      ),
       compositeAlarmName: `${props.name}-errors`,
     });
     const notify = new SnsAction(props.alarmTopic);
     this.errorAlarm.addAlarmAction(notify);
     this.errorAlarm.addOkAction(notify);
-
-    const graph = (title: string, metrics: readonly IMetric[]): GraphWidget =>
-      new GraphWidget({ left: [...metrics], title, width: 8 });
-    const perFunction = (
-      metric: (fn: IFunction) => IMetric,
-    ): readonly IMetric[] => props.functions.map(metric);
-
-    this.dashboard = new Dashboard(this, 'Dashboard', {
-      dashboardName: props.name,
-      widgets: [
-        [
-          graph('API requests', [
-            restApi.metricCount({ period: PERIOD, statistic: 'Sum' }),
-          ]),
-          graph('API errors', [
-            restApi.metricServerError({ period: PERIOD, statistic: 'Sum' }),
-            restApi.metricClientError({ period: PERIOD, statistic: 'Sum' }),
-          ]),
-          graph('API latency', [
-            restApi.metricLatency({ period: PERIOD, statistic: 'p50' }),
-            restApi.metricLatency({ period: PERIOD, statistic: 'p99' }),
-          ]),
-        ],
-        [
-          graph(
-            'Function invocations',
-            perFunction((fn) =>
-              fn.metricInvocations({
-                label: fn.functionName,
-                period: PERIOD,
-                statistic: 'Sum',
-              }),
-            ),
-          ),
-          graph(
-            'Function errors',
-            perFunction((fn) =>
-              fn.metricErrors({
-                label: fn.functionName,
-                period: PERIOD,
-                statistic: 'Sum',
-              }),
-            ),
-          ),
-          graph(
-            'Function duration p99',
-            perFunction((fn) =>
-              fn.metricDuration({
-                label: fn.functionName,
-                period: PERIOD,
-                statistic: 'p99',
-              }),
-            ),
-          ),
-        ],
-      ],
-    });
   }
 }

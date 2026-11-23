@@ -5,7 +5,12 @@ export type ContextKind = 'dimension' | 'annotation' | 'metadata' | 'log';
 
 export type ContextValue = string | number;
 
-export type Outcome = 'success' | 'client_error' | 'server_error' | 'timeout';
+export type Outcome =
+  | 'success'
+  | 'client_error'
+  | 'server_error'
+  | 'timeout'
+  | 'assertion_failed';
 
 export type RequestContext = {
   readonly route?: string;

@@ -1,9 +1,5 @@
 {
   "agent": "wren",
-  "attribution": {
-    "commit": "",
-    "pr": ""
-  },
   "enabledPlugins": {
     "wren@<project>": true
   },

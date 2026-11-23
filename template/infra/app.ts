@@ -1,21 +1,12 @@
 import { App } from 'aws-cdk-lib';
 import { AccountStack } from './account-stack.ts';
-import { AppStack, type ConfigEnvironment } from './stack.ts';
+import { AppStack } from './stack.ts';
 import { stackNameFor } from './stack-name.ts';
 
 const readRequiredEnv = (name: string): string => {
   const value = process.env[name];
   if (value === undefined)
     throw new Error(`Missing required environment variable: ${name}`);
-  return value;
-};
-
-const readConfigEnvironment = (): ConfigEnvironment => {
-  const value = readRequiredEnv('CONFIG_ENVIRONMENT');
-  if (value !== 'production' && value !== 'test')
-    throw new Error(
-      `CONFIG_ENVIRONMENT must be production or test, not ${value}`,
-    );
   return value;
 };
 
@@ -36,7 +27,6 @@ const app = new App();
 new AccountStack(app, 'account', { env });
 
 new AppStack(app, stackNameFor(readRequiredEnv('ENVIRONMENT_NAME')), {
-  configEnvironment: readConfigEnvironment(),
   deletionProtection: readBoolean('DELETION_PROTECTION'),
   env,
 });

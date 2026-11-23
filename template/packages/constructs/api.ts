@@ -2,15 +2,13 @@ import { RemovalPolicy } from 'aws-cdk-lib';
 import {
   AccessLogField,
   AccessLogFormat,
-  AuthorizationType,
-  CognitoUserPoolsAuthorizer,
+  type IAuthorizer,
   LambdaIntegration,
   LogGroupLogDestination,
   MethodLoggingLevel,
   type MethodOptions,
   RestApi,
 } from 'aws-cdk-lib/aws-apigateway';
-import { UserPool } from 'aws-cdk-lib/aws-cognito';
 import type { IFunction } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
@@ -26,10 +24,10 @@ export type Route = {
 };
 
 export type ApiProps = {
+  readonly authorizer?: IAuthorizer;
   readonly description: string;
   readonly name: string;
   readonly routes: readonly Route[];
-  readonly userPoolArns: readonly string[];
 };
 
 export class Api extends Construct {
@@ -37,10 +35,6 @@ export class Api extends Construct {
 
   constructor(scope: Construct, id: string, props: ApiProps) {
     super(scope, id);
-
-    if (props.userPoolArns.length === 0) {
-      throw new Error(`Api ${props.name} needs at least one Cognito user pool`);
-    }
 
     const accessLogs = new LogGroup(this, 'AccessLogs', {
       logGroupName: `/aws/apigateway/${props.name}`,
@@ -79,28 +73,22 @@ export class Api extends Construct {
       restApiName: props.name,
     });
 
-    const authorizer = new CognitoUserPoolsAuthorizer(this, 'Authoriser', {
-      authorizerName: `${props.name}-authoriser`,
-      cognitoUserPools: props.userPoolArns.map((arn, index) =>
-        UserPool.fromUserPoolArn(this, `UserPool${index}`, arn),
-      ),
-    });
-
     for (const route of props.routes) {
       this.restApi.root
         .resourceForPath(route.path)
         .addMethod(
           route.method,
           new LambdaIntegration(route.handler, { allowTestInvoke: false }),
-          toMethodOptions(route, authorizer),
+          toMethodOptions(props.name, route, props.authorizer),
         );
     }
   }
 }
 
 const toMethodOptions = (
+  apiName: string,
   route: Route,
-  authorizer: CognitoUserPoolsAuthorizer,
+  authorizer: IAuthorizer | undefined,
 ): MethodOptions | undefined => {
   if (route.public && route.authorizationScopes) {
     throw new Error(
@@ -108,12 +96,17 @@ const toMethodOptions = (
     );
   }
   if (route.public) return undefined;
+  // A route is protected unless it says otherwise, so a missing authoriser fails the synth instead of opening the route.
+  if (authorizer === undefined) {
+    throw new Error(
+      `Route ${route.method} ${route.path} is protected, so Api ${apiName} needs an authorizer. Mark the route public if it needs none.`,
+    );
+  }
 
   return {
     authorizationScopes: route.authorizationScopes && [
       ...route.authorizationScopes,
     ],
-    authorizationType: AuthorizationType.COGNITO,
     authorizer,
   };
 };

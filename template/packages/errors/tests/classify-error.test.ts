@@ -94,6 +94,18 @@ describe('classifyError', () => {
     });
   });
 
+  test('classifies a failed core assertion as a 500 without its message', () => {
+    const error = new Error('Balance is negative after the command');
+    error.name = 'AssertionError';
+
+    expect(classifyError(error)).toEqual({
+      statusCode: 500,
+      code: 'InternalError',
+      message: 'Unexpected error',
+      outcome: 'assertion_failed',
+    });
+  });
+
   test.each(['a string', undefined, { message: 'not an error' }])(
     'classifies the thrown value %p as 500',
     (thrown) => {
