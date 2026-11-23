@@ -1,5 +1,5 @@
 import { Table } from '@<project>/constructs';
-import { type App, CfnOutput, Stack, type StackProps } from 'aws-cdk-lib';
+import { type App, Stack, type StackProps } from 'aws-cdk-lib';
 import { AttributeType } from 'aws-cdk-lib/aws-dynamodb';
 
 export type AppStackProps = StackProps & {
@@ -10,10 +10,7 @@ export class AppStack extends Stack {
   constructor(scope: App, id: string, props: AppStackProps) {
     super(scope, id, props);
 
-    const state = this.provisionState(props);
-
-    // The environment tool reads this output to point the integration tests at the table.
-    new CfnOutput(this, 'StateTableName', { value: state.tableName });
+    this.provisionState(props);
   }
 
   private provisionState(props: AppStackProps): Table {

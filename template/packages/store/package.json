@@ -3,11 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./index.ts"
   },
   "scripts": {
-    "test:integration": "bun test ./tests/integration",
-    "test:unit": "bun test --path-ignore-patterns='tests/integration/**'"
+    "test:unit": "bun test"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "catalog:",

@@ -1,6 +1,6 @@
 // if: event-sourcing
 import { describe, expect, test } from 'bun:test';
-import type { EventLog } from '../../src/index.ts';
+import type { EventLog } from '../../index.ts';
 
 export type ContractEvent = {
   readonly type: 'incremented';
@@ -18,7 +18,7 @@ const incremented = (by: number): ContractEvent => ({
   by,
 });
 
-// Every EventLog implementation must pass this suite, the in-memory one in unit tests and DynamoDB in integration tests.
+// Every EventLog implementation must pass this suite.
 export const describeEventLogContract = (
   name: string,
   deps: EventLogContractDeps,

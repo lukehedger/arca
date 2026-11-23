@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { registry } from '../src/index.ts';
+import { registry } from '../index.ts';
 
 describe('registry', () => {
   test('routes the ledger variant to an adapter that executes commands', () => {

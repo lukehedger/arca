@@ -173,7 +173,7 @@ The `ledger` adapter passes the command to the gate unchanged. A new place to ho
 
 ## 7. Contracts with the outside
 
-`POST /accounts/{accountId}/commands` takes `{ "variant": "ledger", "command": { "type": "deposit_funds", "amount": 25 } }` and returns the account. `packages/schema/src/account.ts` defines both shapes. A new optional field is a safe change. Any other change needs a new route.
+`POST /accounts/{accountId}/commands` takes `{ "variant": "ledger", "command": { "type": "deposit_funds", "amount": 25 } }` and returns the account. `packages/schema/account.ts` defines both shapes. A new optional field is a safe change. Any other change needs a new route.
 
 ---
 

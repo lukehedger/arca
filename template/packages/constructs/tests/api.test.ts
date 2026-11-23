@@ -3,7 +3,7 @@ import { App, Duration, Stack } from 'aws-cdk-lib';
 import { CognitoUserPoolsAuthorizer } from 'aws-cdk-lib/aws-apigateway';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { UserPool } from 'aws-cdk-lib/aws-cognito';
-import { Api, LambdaFunction, type Route } from '../src/index.ts';
+import { Api, LambdaFunction, type Route } from '../index.ts';
 
 const USER_POOL_ARN =
   'arn:aws:cognito-idp:eu-west-1:123456789012:userpool/eu-west-1_example';

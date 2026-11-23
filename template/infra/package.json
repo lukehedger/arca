@@ -2,9 +2,6 @@
   "name": "infra",
   "private": true,
   "type": "module",
-  "exports": {
-    "./stack-name": "./stack-name.ts"
-  },
   "scripts": {
     "cdk": "cdk",
     "test:unit": "bun test"

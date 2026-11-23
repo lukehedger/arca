@@ -54,8 +54,6 @@ The wren plugin refuses destructive Git and file commands and every AWS CLI call
 
 **[MUST]** When you change `core/`, also run `bun mutation`. Add tests until it passes.
 
-**[SHOULD]** When you change the shell or `infra/`, also run the integration tests in a disposable environment. `bun env:deploy` deploys a stack named after the current branch, `bun env:test` runs the integration tests against it and `bun env:destroy` deletes it. Ask the user before you run them, because they change AWS. CI runs the same three steps on every pull request.
-
 ## Security
 
 **[MUST]** Never commit API keys, secrets or credentials.

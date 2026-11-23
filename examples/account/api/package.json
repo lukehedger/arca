@@ -3,8 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:integration": "bun test ./tests/integration",
-    "test:unit": "bun test --path-ignore-patterns='tests/integration/**'"
+    "test:unit": "bun test"
   },
   "dependencies": {
     "@<project>/errors": "workspace:*",

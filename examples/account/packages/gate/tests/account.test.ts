@@ -2,11 +2,11 @@ import { describe, expect, test } from 'bun:test';
 // if: event-sourcing
 import { type AccountEvent, AssertionError } from '@<project>/core';
 import { createInMemoryEventLog, type EventLog } from '@<project>/store';
-import { createAccountGate } from '../src/index.ts';
+import { createAccountGate } from '../index.ts';
 // if: crud
 import type { Account } from '@<project>/core';
 import { createInMemoryRecordStore, type RecordStore } from '@<project>/store';
-import { createAccountGate } from '../src/index.ts';
+import { createAccountGate } from '../index.ts';
 // end
 
 const clock = (): Date => new Date('2026-01-01T00:00:00.000Z');

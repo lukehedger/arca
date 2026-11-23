@@ -1,6 +1,6 @@
 // if: crud
 import { describe, expect, test } from 'bun:test';
-import type { RecordStore } from '../../src/index.ts';
+import type { RecordStore } from '../../index.ts';
 
 export type ContractRecord = {
   readonly status: 'open' | 'closed';
@@ -15,7 +15,7 @@ export type RecordStoreContractDeps = {
 
 const open = (count: number): ContractRecord => ({ status: 'open', count });
 
-// Every RecordStore implementation must pass this suite, the in-memory one in unit tests and DynamoDB in integration tests.
+// Every RecordStore implementation must pass this suite.
 export const describeRecordStoreContract = (
   name: string,
   deps: RecordStoreContractDeps,
