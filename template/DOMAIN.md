@@ -45,19 +45,15 @@ type <Entity>State = {
 <!-- Which fields are the truth about quantities that matter (money, balances, counts) and which events or transitions may change them. -->
 <!-- Records of individual operations on the <entity>, each with its own status, and how they resolve. Delete if none. -->
 
-### 2.3 Integration-specific state
-
-<!-- Fields only one integration needs, where they sit in state and the rule that they come only from persisted data, never from request-only input. Delete if none. -->
-
-### 2.4 Immutable context
+### 2.3 Immutable context
 
 <!-- The facts fixed when the <entity> is created and never changed afterwards. -->
 
-### 2.5 Idempotency
+### 2.4 Idempotency
 
 <!-- The key that identifies a repeated command or request and what happens when it arrives again. -->
 
-### 2.6 Persistence
+### 2.5 Persistence
 
 | Key | Format          |
 | --- | --------------- |
@@ -148,9 +144,10 @@ Request ──▶ Guard ──▶ Transition ──▶ Conditional write
 
 ---
 
-## 6. The integration boundary
+## 6. External systems
 
-<!-- How the core stays agnostic of external systems, what an adapter declares and how variation enters the core as data only. -->
+<!-- Each fact the shell fetches from an external system before a decision and the command field that carries it. -->
+<!-- Each effect that follows an approved decision and the async handler that runs it. -->
 <!-- How inbound callbacks from external systems resolve to the <entity> and become commands on the same path as every other write. -->
 
 ---

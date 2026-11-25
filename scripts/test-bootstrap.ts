@@ -264,13 +264,13 @@ const breakagesFor = (state: State): readonly Breakage[] => [
       ),
   },
   {
-    name: 'architecture: a handler imports the gate',
+    name: 'architecture: a handler imports the store',
     files: ['api/accounts/handler.ts'],
-    expected: 'A handler only parses, validates, routes and maps the result',
+    expected: 'A handler parses the request into a command',
     apply: (appRoot) =>
       append(
         join(appRoot, 'api/accounts/handler.ts'),
-        `import type { AccountGate } from '@${NAME}/gate';\nexport type LeakedGate = AccountGate;`,
+        `import type { createDocumentClient } from '@${NAME}/store';\nexport type Leaked = typeof createDocumentClient;`,
       ),
   },
   {
@@ -284,11 +284,11 @@ const breakagesFor = (state: State): readonly Breakage[] => [
       ),
   },
   {
-    name: 'architecture: a new variant has no adapter in the registry',
-    files: ['packages/schema/variant.ts'],
-    expected: 'error file="packages/router/registry.ts"',
+    name: 'architecture: the boundary schema drops a command the core decides',
+    files: ['packages/schema/account.ts'],
+    expected: 'error file="packages/schema/account.ts"',
     apply: (appRoot) =>
-      edit(join(appRoot, 'packages/schema/variant.ts'), "['ledger'] as const", "['ledger', 'acme'] as const"),
+      edit(join(appRoot, 'packages/schema/account.ts'), "  z.strictObject({ type: z.literal('close_account') }),\n", ''),
   },
   {
     name: 'infrastructure: the stack names a resource after its account',

@@ -7,7 +7,7 @@
   },
   "dependencies": {
     "@<project>/errors": "workspace:*",
-    "@<project>/router": "workspace:*",
+    "@<project>/gate": "workspace:*",
     "@<project>/schema": "workspace:*",
     "@<project>/telemetry": "workspace:*"
   },

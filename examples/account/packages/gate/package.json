@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@<project>/core": "workspace:*",
+    "@<project>/errors": "workspace:*",
     "@<project>/store": "workspace:*",
     "zod": "catalog:"
   }

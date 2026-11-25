@@ -16,7 +16,7 @@ The one exception is `.github/`. GitHub reads workflows, CODEOWNERS and the Copi
 [docs/migration-plan.md](docs/migration-plan.md) holds the assessment of the previous implementation and the plan to replace it.
 <!-- end -->
 
-**[MUST]** Read [DOMAIN.md](DOMAIN.md) before you design or implement any change to the domain model. It defines the data model, lifecycle statuses, invariants and the integration boundary. If a change cannot fit the model, change the model deliberately and update DOMAIN.md in the same PR. Do not work around it locally.
+**[MUST]** Read [DOMAIN.md](DOMAIN.md) before you design or implement any change to the domain model. It defines the data model, lifecycle statuses, invariants and the external systems. If a change cannot fit the model, change the model deliberately and update DOMAIN.md in the same PR. Do not work around it locally.
 
 **[MUST]** Read [ARCHITECTURE.md](ARCHITECTURE.md) before you design or implement a non-trivial change. It defines the core rules, the AWS strategy and the anti-patterns. If a change genuinely needs a rule to change, update ARCHITECTURE.md in the same change and give the reason.
 

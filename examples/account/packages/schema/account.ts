@@ -1,6 +1,7 @@
+import type { AccountCommand } from '@<project>/core';
 import { z } from 'zod';
 import { jsonBody } from './json-body.ts';
-import { variantSchema } from './variant.ts';
+import type { Assert, Same } from './same.ts';
 
 const IDEMPOTENCY_KEY_HEADER = 'idempotency-key';
 
@@ -15,6 +16,11 @@ export const accountCommandSchema = z.discriminatedUnion('type', [
   z.strictObject({ type: z.literal('withdraw_funds'), amount: amountSchema }),
   z.strictObject({ type: z.literal('close_account') }),
 ]);
+
+// The handler passes the parsed command straight to the gate, so a command on one side only fails to compile.
+export type AccountCommandMatchesCore = Assert<
+  Same<z.infer<typeof accountCommandSchema>, AccountCommand>
+>;
 
 export const accountCommandRequestSchema = z.strictObject({
   accountId: accountIdSchema,
@@ -49,15 +55,10 @@ export const executeAccountCommandEventSchema = z
   .object({
     pathParameters: z.object({ accountId: accountIdSchema }),
     headers: idempotencyKeySchema,
-    body: jsonBody(
-      z.strictObject({ variant: variantSchema, command: accountCommandSchema }),
-    ),
+    body: jsonBody(z.strictObject({ command: accountCommandSchema })),
   })
   .transform(({ pathParameters, headers, body }) => ({
-    variant: body.variant,
-    request: {
-      accountId: pathParameters.accountId,
-      command: body.command,
-      idempotencyKey: headers,
-    },
+    accountId: pathParameters.accountId,
+    command: body.command,
+    idempotencyKey: headers,
   }));

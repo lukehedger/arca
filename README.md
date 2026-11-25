@@ -30,6 +30,8 @@ arca helps you complete `DOMAIN.md` based on your domain. wren, the coding agent
 
 The architectural framework is preserved via executable fitness functions, such as dependency rules that fail CI when a layer reaches past its neighbour, a lint that bans I/O in core/, a check that DOMAIN.md and the code use the same names, a property test for every invariant and mutation tests on the core.
 
+Agents copy drift as readily as a good pattern, so documents alone cannot hold the architecture in place. Mechanical enforcement plus continuous cleanup can.
+
 ### commands
 
 - `/ship` - opens a pull request with auto-merge enabled, then addresses review comments and failed checks until it is clean.
@@ -41,6 +43,10 @@ wren never changes the checkout you opened. The wren plugin refuses every change
 ### shell commands
 
 The wren plugin checks every shell command before it runs. It refuses `git reset --hard`, a forced `git clean`, a force push, `git branch -D` and a forced recursive removal of the root, home or parent directory. It asks you before a recursive removal, `sudo`, `chmod 777` or a recursive `chown`. Without an interactive UI, it refuses them. It refuses every AWS CLI call outside the read-only list in the `aws` skill, including a DynamoDB scan and a secret value read. It looks through shell wrappers, chained commands and command substitutions.
+
+### telemetry
+
+An agent can only diagnose what it can see, so every signal is structured and correlated. The `instrument` wrapper in the telemetry package writes one wide event per Lambda invocation, with the route, request ID, client, status and outcome plus any context the handler records. It traces the invocation in X-Ray and flushes custom CloudWatch metrics in Embedded Metric Format. Each recorded key declares where it goes: the wide event, an X-Ray annotation or a metric dimension. A handler that nears its timeout writes the wide event early and lists the outbound calls still open. The `LambdaFunction` construct enables active tracing on every function. The API access log carries the X-Ray trace ID. The `aws` skill lets wren query logs with Logs Insights and read metrics and traces, all read-only.
 
 ### alarms
 
@@ -82,4 +88,4 @@ arca can be extended to bundle your org's standards and tools. Just fork it and 
 
 ## example
 
-`examples/account/` is a vertical slice through every layer of the request pipeline for both persistence modes: a ledger account with a handler, router, adapter, gate, core and store.
+`examples/account/` is a vertical slice through every layer of the request pipeline for both persistence modes: a ledger account with a handler, schema, gate, core and store.

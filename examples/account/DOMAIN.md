@@ -45,15 +45,11 @@ type Account =
 
 The balance is the truth. Only deposits, withdrawals and the close change it.
 
-### 2.3 Integration-specific state
-
-None. The ledger is the only variant.
-
-### 2.4 Immutable context
+### 2.3 Immutable context
 
 The account id, fixed when the account opens.
 
-### 2.5 Idempotency
+### 2.4 Idempotency
 
 <!-- if: event-sourcing -->
 The `Idempotency-Key` header identifies a repeated request. A key the stream already holds returns the current account and appends nothing.
@@ -61,7 +57,7 @@ The `Idempotency-Key` header identifies a repeated request. A key the stream alr
 CRUD mode keeps no record of handled requests. A repeated request is decided again on the current record.
 <!-- end -->
 
-### 2.6 Persistence
+### 2.5 Persistence
 
 <!-- if: event-sourcing -->
 | Key | Format             |
@@ -165,15 +161,15 @@ The core enforces every invariant. A rejection names the invariant it protects. 
 
 ---
 
-## 6. The integration boundary
+## 6. External systems
 
-The `ledger` adapter passes the command to the gate unchanged. A new place to hold accounts is a new adapter. The core stays the same.
+None. The ledger holds every account itself, so no command needs a fact from outside and no effect follows a decision.
 
 ---
 
 ## 7. Contracts with the outside
 
-`POST /accounts/{accountId}/commands` takes `{ "variant": "ledger", "command": { "type": "deposit_funds", "amount": 25 } }` and returns the account. `packages/schema/account.ts` defines both shapes. A new optional field is a safe change. Any other change needs a new route.
+`POST /accounts/{accountId}/commands` takes `{ "command": { "type": "deposit_funds", "amount": 25 } }` and returns the account. `packages/schema/account.ts` defines both shapes and asserts that the command schema matches `AccountCommand`. A new optional field is a safe change. Any other change needs a new route.
 
 ---
 

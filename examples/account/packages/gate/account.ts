@@ -9,6 +9,7 @@ import {
   evolve,
   initialState,
 } from '@<project>/core';
+import { ConflictError, DecisionRejectedError } from '@<project>/errors';
 import {
   createDocumentClient,
   createDynamoDbEventLog,
@@ -23,6 +24,7 @@ import {
   type AccountRejection,
   decide,
 } from '@<project>/core';
+import { ConflictError, DecisionRejectedError } from '@<project>/errors';
 import {
   createDocumentClient,
   createDynamoDbRecordStore,
@@ -40,15 +42,21 @@ export type AccountCommandInput = {
   readonly idempotencyKey: string | undefined;
 };
 
-export type AccountResult =
-  | { readonly outcome: 'applied'; readonly account: Account }
-  | { readonly outcome: 'rejected'; readonly rejection: AccountRejection }
-  | { readonly outcome: 'conflict' };
-
-// The adapters see one shape whatever the persistence mode, so only this file and the core know the mode.
+// Handlers see one shape whatever the persistence mode, so only this file and the core know the mode.
 export type AccountGate = {
-  readonly execute: (input: AccountCommandInput) => Promise<AccountResult>;
+  readonly execute: (input: AccountCommandInput) => Promise<Account>;
 };
+
+const rejectionError = (rejection: AccountRejection): DecisionRejectedError =>
+  new DecisionRejectedError(
+    rejection.invariant,
+    `The command would break the ${rejection.invariant} rule`,
+  );
+
+const conflictError = (accountId: string): ConflictError =>
+  new ConflictError(
+    `Account ${accountId} changed during the request. Retry it.`,
+  );
 
 // if: event-sourcing
 // Persisted events are external data, so they are parsed back into the core's event type.
@@ -85,13 +93,12 @@ export const createAccountGate = (deps: AccountGateDeps): AccountGate => {
         command,
         idempotencyKey,
       });
-      if (result.outcome === 'rejected' || result.outcome === 'conflict') {
-        return result;
-      }
+      if (result.outcome === 'rejected') throw rejectionError(result.rejection);
+      if (result.outcome === 'conflict') throw conflictError(accountId);
 
       // Every approved command and every replay follows open_account, so the account exists.
       assert(result.state !== undefined, 'An applied command left no account');
-      return { outcome: 'applied', account: result.state };
+      return result.state;
     },
   };
 };
@@ -127,11 +134,10 @@ export const createAccountGate = (deps: AccountGateDeps): AccountGate => {
   return {
     execute: async ({ accountId, command }) => {
       const result = await gate.apply({ id: accountId, command });
-      if (result.outcome === 'approved') {
-        return { outcome: 'applied', account: result.state };
-      }
+      if (result.outcome === 'rejected') throw rejectionError(result.rejection);
+      if (result.outcome === 'conflict') throw conflictError(accountId);
 
-      return result;
+      return result.state;
     },
   };
 };

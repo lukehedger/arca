@@ -6,7 +6,6 @@ export {
 } from './classify-error.ts';
 export { type ErrorBody, errorBodySchema } from './error-body.ts';
 export {
-  CapabilityNotSupportedError,
   ConflictError,
   DecisionRejectedError,
   IntegrationError,
