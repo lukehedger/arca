@@ -3,44 +3,33 @@ import {
   DecisionRejectedError,
   errorBodySchema,
 } from '@<project>/errors';
+import type { AccountGate } from '@<project>/gate';
 import { describe, expect, test } from 'bun:test';
-import {
-  type AccountsHandlerDeps,
-  makeHandler,
-} from '../accounts/handler.ts';
+import { makeHandler } from '../accounts/handler.ts';
 import { commandEvent, lambdaContext } from './api-event.ts';
 
-type ExecuteCommand = AccountsHandlerDeps['executeCommand'];
+type Execute = AccountGate['execute'];
 
-const handlerWith = (executeCommand: ExecuteCommand) =>
-  makeHandler({ executeCommand });
-
-const succeeding: ExecuteCommand = async (_variant, request) => ({
-  accountId: request.accountId,
-  status: 'open',
-  balance: 25,
-});
+const handlerWith = (execute: Execute) =>
+  makeHandler({ accounts: { execute } });
 
 const failingWith =
-  (error: Error): ExecuteCommand =>
+  (error: Error): Execute =>
   async () => {
     throw error;
   };
 
-const deposit = {
-  variant: 'ledger',
-  command: { type: 'deposit_funds', amount: 25 },
-};
+const deposit = { command: { type: 'deposit_funds', amount: 25 } };
 
 describe('accounts handler', () => {
-  test('routes the parsed command and returns the account', async () => {
-    const calls: unknown[] = [];
-    const executeCommand: ExecuteCommand = async (variant, request) => {
-      calls.push({ variant, request });
-      return succeeding(variant, request);
+  test('passes the parsed command to the gate and returns the account', async () => {
+    const received: unknown[] = [];
+    const execute: Execute = async (input) => {
+      received.push(input);
+      return { status: 'open', balance: 25 };
     };
 
-    const response = await handlerWith(executeCommand)(
+    const response = await handlerWith(execute)(
       commandEvent('acc-1', deposit, { 'Idempotency-Key': 'request-1' }),
       lambdaContext,
     );
@@ -51,26 +40,20 @@ describe('accounts handler', () => {
       status: 'open',
       balance: 25,
     });
-    expect(calls).toEqual([
+    expect(received).toEqual([
       {
-        variant: 'ledger',
-        request: {
-          accountId: 'acc-1',
-          command: { type: 'deposit_funds', amount: 25 },
-          idempotencyKey: 'request-1',
-        },
+        accountId: 'acc-1',
+        command: { type: 'deposit_funds', amount: 25 },
+        idempotencyKey: 'request-1',
       },
     ]);
   });
 
   test.each([
-    ['malformed JSON', '{"variant":'],
-    [
-      'an invalid command',
-      { variant: 'ledger', command: { type: 'deposit_funds', amount: -1 } },
-    ],
-  ])('answers 400 without routing %s', async (_case, body) => {
-    const response = await handlerWith(failingWith(new Error('Routed')))(
+    ['malformed JSON', '{"command":'],
+    ['an invalid command', { command: { type: 'deposit_funds', amount: -1 } }],
+  ])('answers 400 without calling the gate for %s', async (_case, body) => {
+    const response = await handlerWith(failingWith(new Error('Called')))(
       commandEvent('acc-1', body),
       lambdaContext,
     );

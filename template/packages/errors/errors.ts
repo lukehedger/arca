@@ -21,18 +21,6 @@ export class NotFoundError extends Error {
   }
 }
 
-export class CapabilityNotSupportedError extends Error {
-  readonly variant: string;
-  readonly capability: string;
-
-  constructor(variant: string, capability: string) {
-    super(`${variant} does not support ${capability}`);
-    this.name = 'CapabilityNotSupportedError';
-    this.variant = variant;
-    this.capability = capability;
-  }
-}
-
 // The code is the core's rejection reason, such as the invariant the command would break.
 export class DecisionRejectedError extends Error {
   readonly code: string;

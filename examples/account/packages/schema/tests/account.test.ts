@@ -4,22 +4,16 @@ import { executeAccountCommandEventSchema } from '../index.ts';
 const event = (overrides: Record<string, unknown> = {}) => ({
   pathParameters: { accountId: 'acc-1' },
   headers: { 'Idempotency-Key': 'request-1' },
-  body: JSON.stringify({
-    variant: 'ledger',
-    command: { type: 'deposit_funds', amount: 25 },
-  }),
+  body: JSON.stringify({ command: { type: 'deposit_funds', amount: 25 } }),
   ...overrides,
 });
 
 describe('executeAccountCommandEventSchema', () => {
-  test('reads the variant, the account, the command and the idempotency key', () => {
+  test('reads the account, the command and the idempotency key', () => {
     expect(executeAccountCommandEventSchema.parse(event())).toEqual({
-      variant: 'ledger',
-      request: {
-        accountId: 'acc-1',
-        command: { type: 'deposit_funds', amount: 25 },
-        idempotencyKey: 'request-1',
-      },
+      accountId: 'acc-1',
+      command: { type: 'deposit_funds', amount: 25 },
+      idempotencyKey: 'request-1',
     });
   });
 
@@ -28,7 +22,7 @@ describe('executeAccountCommandEventSchema', () => {
       event({ headers: { 'idempotency-key': 'request-2' } }),
     );
 
-    expect(parsed.request.idempotencyKey).toBe('request-2');
+    expect(parsed.idempotencyKey).toBe('request-2');
   });
 
   test('leaves the idempotency key out when the header is absent', () => {
@@ -36,7 +30,7 @@ describe('executeAccountCommandEventSchema', () => {
       event({ headers: null }),
     );
 
-    expect(parsed.request.idempotencyKey).toBeUndefined();
+    expect(parsed.idempotencyKey).toBeUndefined();
   });
 
   test.each([
@@ -46,17 +40,17 @@ describe('executeAccountCommandEventSchema', () => {
     ['an extra field', { type: 'close_account', reason: 'moved' }],
   ])('rejects %s', (_case, command) => {
     const parsed = executeAccountCommandEventSchema.safeParse(
-      event({ body: JSON.stringify({ variant: 'ledger', command }) }),
+      event({ body: JSON.stringify({ command }) }),
     );
 
     expect(parsed.success).toBe(false);
   });
 
-  test('rejects an unknown variant', () => {
+  test('rejects a body with fields beside the command', () => {
     const parsed = executeAccountCommandEventSchema.safeParse(
       event({
         body: JSON.stringify({
-          variant: 'acme',
+          variant: 'ledger',
           command: { type: 'open_account' },
         }),
       }),

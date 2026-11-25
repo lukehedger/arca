@@ -10,7 +10,7 @@ Reliability comes first. Make everything observable, monitor and analyse it cont
 
 The architecture is Lambda-centric, with the fewest infrastructure components and third-party dependencies that do the job.
 
-The domain is modelled as state transitions governed by rules (see DOMAIN.md). The rules live in a pure _functional core_. An _imperative shell_ of closed layers surrounds the core and does all I/O. Each layer can only call the layer directly below it. External integrations are strategies selected by a registry.
+The domain is modelled as state transitions governed by rules (see DOMAIN.md). The rules live in a pure _functional core_. An _imperative shell_ of closed layers surrounds the core and does all I/O. Each layer can only call the layer directly below it. Every request that enters the shell becomes one of the core's commands.
 
 These properties let an agent verify its own work and reach near-deterministic outcomes:
 
@@ -27,27 +27,29 @@ All application infrastructure lives in one CDK stack definition. Every environm
 
 ### Handlers stay thin
 
-A handler parses the request, validates it against a schema, routes it and maps the result. It holds no business logic, no integration branching and no direct SDK calls. Handlers export `makeHandler(deps)` so tests inject inline fakes. A handler that is hard to fake has absorbed logic from a lower layer.
+A handler parses the request into a command with a schema, passes the command to the gate and maps the result. It holds no business logic and no direct SDK calls. Handlers export `makeHandler(deps)` so tests inject inline fakes. A handler that is hard to fake has absorbed logic from a lower layer.
 
 ### The request pipeline is a fixed sequence of layers
 
 ```
-API Gateway  ->  handler  ->  schema  ->  router  ->  adapter  ->  gate  ->  store
-                             validate    resolve     translate      |    load, persist
-                                                                    v
-                                                                   core
-                                                                  decide
+API Gateway  ->  handler  ->  gate  ->  store
+async event  ->     |          |      load, persist
+                    v          v
+                 schema       core
+                 parse       decide
 ```
+
+Every request takes this path, whether API Gateway or an async trigger delivers it. The handler parses the request into a command. The gate asks the core for a decision on it and the store persists the decision.
 
 Shell layers only call the layer below. Skipping a layer or calling upward removes the separation that makes each layer testable and replaceable on its own.
 
-The core sits outside the chain. The gate is its only caller. The core calls nothing.
+The schema and the core sit outside the chain. A handler calls the schema to parse the request. The gate is the only caller of the core. The core calls nothing.
 
 ### State changes go through the core
 
 The core validates every state transition with a pure function. Only the core enforces lifecycle validity and domain rules.
 
-The gate runs every state change in three steps. It loads the current state from the store. It passes the state and the command to the core, which returns a decision. It persists an approved decision with a conditional write and returns a rejection unchanged. The core never calls the store or performs any other I/O. Persistence sits behind a store interface. Every store implementation passes one contract suite, which includes two concurrent writes at the same version.
+The gate runs every state change in three steps. It loads the current state from the store. It passes the state and the command to the core, which returns a decision. It persists an approved decision with a conditional write and returns a rejection unchanged. The binding of the gate for each entity, such as `packages/gate/order.ts`, raises a rejection as a `DecisionRejectedError` and a lost race as a `ConflictError`. A handler then maps every outcome through the errors package. The core never calls the store or performs any other I/O. Persistence sits behind a store interface. Every store implementation passes one contract suite, which includes two concurrent writes at the same version.
 
 <!-- if: event-sourcing -->
 State is an append-only stream of immutable events. Current state is a projection of those events and is never stored or mutated in place. Append-only removes write conflicts, gives a complete audit trail and makes commands idempotent. The gate projects the new events through `evolve` before it appends them, so an event that fails a core assertion never reaches the stream.
@@ -55,17 +57,19 @@ State is an append-only stream of immutable events. Current state is a projectio
 State is a record guarded by a state machine. Every write is a transition the core has approved, applied with a conditional write on the current status and version.
 <!-- end -->
 
-### Integrations are isolated behind one adapter interface
+### External calls stay outside the decision
 
-All behaviour specific to an external system lives behind one adapter interface in its own package. An adapter can be complex inside but presents a uniform interface outside. Shared packages never branch on a specific integration. `if (provider === 'x')` outside the adapter package means the abstraction has leaked. Push it back down.
+The core decides on the facts it receives. A fact from an external system, such as a price or a verification result, is shell work. Fetch it in the binding of the gate for the entity, before the gate reads the state. Pass it to the core as a field of the command, the same way the shell passes the time.
+
+An effect that must follow an approved decision, such as a notification, runs in `async/` from the persisted outcome. Never make it inline in the same request after the gate returns. A failure there leaves the decision persisted and the effect lost.
 
 ### Schemas are the only contract
 
 Schemas define every request and response shape. They produce the compile-time types, the runtime validation and the OpenAPI spec. Do not hand-write types that duplicate a schema, hand-edit generated output or validate ad hoc in a handler.
 
-### Routing is exhaustive and type-enforced
+### The boundary parses straight into the core's commands
 
-The supported variants are a union type and the router registry is a `Record` over that union. A new variant without a registry entry is a compile error. Capabilities are opt-in by presence. An absent capability returns a 422, not a throwing stub. Never widen the union to `string`, cast away exhaustiveness or add a default case that hides a missing entry.
+A handler's schema parses each request into one of the core's commands. The command schema and the core's command type must accept the same values. Assert it beside the schema with `Assert<Same<z.infer<typeof schema>, Command>>` from the schema package, so a command on one side only fails to compile. Never widen a union to `string`, cast away exhaustiveness or add a default case that hides an unhandled member.
 
 ### The core is deterministic
 
@@ -110,7 +114,7 @@ A durable execution that exhausts its retries records FAILED instead of throwing
 - `api/` - thin Lambda handlers behind API Gateway
 - `async/` - handlers for durable functions, queues, schedules and streams
 - `core/` - the functional core: state, transitions and domain rules
-- `packages/` - shared libraries: schema, router, adapters, gate, store, errors, telemetry and CDK constructs
+- `packages/` - shared libraries: schema, gate, store, errors, telemetry and CDK constructs
 - `infra/` - the CDK app
 - `tools/` - repo-internal CLIs that agents run: the fitness functions and the status line
 - `docs/` - strategy documents and agent design
@@ -135,8 +139,8 @@ The `catalog` in the root `package.json` pins every version. This section names 
 
 Common changes are additive and touch a small, predictable set of places. A change that edits many files or reaches across layers is a signal to stop and check it against the rules.
 
-- **New variant** - a schema, a union member, an adapter with its capabilities, a registry entry and tests. Handlers, core and infrastructure stay unchanged.
-- **New integration** - a new adapter implementing the interface, plus registry entries.
+- **New command** - a name in DOMAIN.md and `core/vocabulary.ts`, a case in the decider, a member of the command schema and tests. Handlers and infrastructure stay unchanged.
+- **New external fact** - a call in the binding of the gate for the entity and a field on the command that carries the result.
 - **New route** - a route entry in the stack and a thin handler.
 - **Shared code** - an existing package where it fits. Create a package only for a distinct responsibility.
 
@@ -147,17 +151,18 @@ Each row names the check that catches the anti-pattern. A row marked review has 
 | Anti-pattern                                                                                  | Caught by                                                                                                                                     |
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | A second application stack definition, or infrastructure split per feature or per environment | Review                                                                                                                                        |
-| Business logic, integration branching or lifecycle handling in a handler                      | Partly by Biome, which stops a handler importing the core, the gate, the store or an AWS SDK. Logic written inline needs review.              |
+| Business logic or lifecycle handling in a handler                                             | Partly by Biome, which stops a handler importing the core, the store or an AWS SDK. Logic written inline needs review.                        |
 | A layer calling upward or skipping the layer below                                            | Biome layer import rules                                                                                                                      |
-| State changed anywhere but through the gate and the core                                      | Biome layer import rules. Only the gate may import the core and the store.                                                                    |
+| State changed anywhere but through the gate and the core                                      | Biome layer import rules. Only the gate may import the store. Only the gate and the schema may import the core.                               |
 | The core calling the store or performing any other I/O                                        | Biome core rules                                                                                                                              |
 | A clock, random value, identifier or other global read in the core                            | Biome core rules and the determinism plugin. `tools/fitness/tests/lint-rules.test.ts` proves they still fail each violation.                  |
 | Events appended before the core has checked the state they produce                            | Gate unit tests                                                                                                                               |
 | A store write that lets two concurrent writers both succeed                                   | Store contract tests against the in-memory implementations                                                                                    |
 | A stack or resource name that ignores the environment name                                    | Infrastructure assertions                                                                                                                     |
-| Integration name checks outside the adapter package                                           | Review                                                                                                                                        |
+| An external call or effect made after the decision in the same request                        | Review                                                                                                                                        |
 | Hand-written types or hand-edited OpenAPI that duplicate a schema                             | Review                                                                                                                                        |
-| A widened union or default case that hides a missing registry entry                           | Partly by the type check, which fails on a missing registry entry. A widened union or default case needs review.                              |
+| A command schema that accepts other commands than the core decides                            | Type check: the `Assert<Same<...>>` beside the schema                                                                                         |
+| A widened union or default case that hides an unhandled member                                | Review                                                                                                                                        |
 | Bespoke retry, reconciliation or shadow-state infrastructure                                  | Review                                                                                                                                        |
 | A new async mechanism added as if it were routine                                             | Review                                                                                                                                        |
 | A dependency added to save a few lines of internal code                                       | Review                                                                                                                                        |

@@ -1,3 +1,4 @@
+import { ConflictError, DecisionRejectedError } from '@<project>/errors';
 import { describe, expect, test } from 'bun:test';
 // if: event-sourcing
 import { type AccountEvent, AssertionError } from '@<project>/core';
@@ -15,10 +16,25 @@ const clock = (): Date => new Date('2026-01-01T00:00:00.000Z');
 const createGate = (
   eventLog: EventLog<AccountEvent> = createInMemoryEventLog({ clock }),
 ) => createAccountGate({ eventLog });
+
+// Reads the real stream but loses every race, as if another writer always appended first.
+const losingEveryRace = (): EventLog<AccountEvent> => {
+  const eventLog = createInMemoryEventLog<AccountEvent>({ clock });
+  return { read: eventLog.read, append: async () => ({ outcome: 'conflict' }) };
+};
 // if: crud
 const createGate = (
   recordStore: RecordStore<Account> = createInMemoryRecordStore({ clock }),
 ) => createAccountGate({ recordStore });
+
+// Reads the real record but loses every race, as if another writer always wrote first.
+const losingEveryRace = (): RecordStore<Account> => {
+  const recordStore = createInMemoryRecordStore<Account>({ clock });
+  return {
+    read: recordStore.read,
+    write: async () => ({ outcome: 'conflict' }),
+  };
+};
 // end
 
 describe('account gate', () => {
@@ -30,29 +46,36 @@ describe('account gate', () => {
       idempotencyKey: undefined,
     });
 
-    const result = await gate.execute({
+    const account = await gate.execute({
       accountId: 'acc-1',
       command: { type: 'deposit_funds', amount: 25 },
       idempotencyKey: undefined,
     });
 
-    expect(result).toEqual({
-      outcome: 'applied',
-      account: { status: 'open', balance: 25 },
-    });
+    expect(account).toEqual({ status: 'open', balance: 25 });
   });
 
-  test('returns the core rejection unchanged', async () => {
-    const result = await createGate().execute({
+  test('raises a rejection named after the invariant it protects', async () => {
+    const result = createGate().execute({
       accountId: 'acc-1',
       command: { type: 'withdraw_funds', amount: 1 },
       idempotencyKey: undefined,
     });
 
-    expect(result).toEqual({
-      outcome: 'rejected',
-      rejection: { invariant: 'account-opens-first' },
+    await expect(result).rejects.toBeInstanceOf(DecisionRejectedError);
+    await expect(result).rejects.toMatchObject({
+      code: 'account-opens-first',
     });
+  });
+
+  test('raises a conflict when another write won the race', async () => {
+    const result = createGate(losingEveryRace()).execute({
+      accountId: 'acc-1',
+      command: { type: 'open_account' },
+      idempotencyKey: undefined,
+    });
+
+    await expect(result).rejects.toBeInstanceOf(ConflictError);
   });
   // if: event-sourcing
 
@@ -71,8 +94,8 @@ describe('account gate', () => {
     await gate.execute(deposit);
 
     expect(await gate.execute(deposit)).toEqual({
-      outcome: 'applied',
-      account: { status: 'open', balance: 10 },
+      status: 'open',
+      balance: 10,
     });
   });
 
