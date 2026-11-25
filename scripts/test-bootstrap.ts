@@ -291,6 +291,13 @@ const breakagesFor = (state: State): readonly Breakage[] => [
       edit(join(appRoot, 'packages/schema/variant.ts'), "['ledger'] as const", "['ledger', 'acme'] as const"),
   },
   {
+    name: 'infrastructure: the stack names a resource after its account',
+    files: ['infra/stack.ts'],
+    expected: '(fail) AppStack > synthesises the same template in every account',
+    apply: (appRoot) =>
+      edit(join(appRoot, 'infra/stack.ts'), `tableName: '${NAME}-state'`, 'tableName: `${this.account}-state`'),
+  },
+  {
     name: 'determinism: the core calls Math.random',
     files: ['core/account.ts'],
     expected: 'cannot call Math.random',
@@ -421,21 +428,24 @@ const proveBreakageFails = async (appRoot: string, breakage: Breakage): Promise<
 
 const synthEnvironments = async (appRoot: string): Promise<void> => {
   const outdir = await mkdtemp(join(tmpdir(), 'arca-synth-'));
-  for (const environment of ['dev', 'acc']) {
-    await mustPass(`Synthesising ${environment}`, ['bun', 'app.ts'], join(appRoot, 'infra'), {
-      CDK_OUTDIR: join(outdir, environment),
-      CDK_DEFAULT_ACCOUNT: '123456789012',
-      CDK_DEFAULT_REGION: 'eu-west-1',
+  const accounts = [
+    { account: '123456789012', region: 'eu-west-1' },
+    { account: '210987654321', region: 'eu-west-1' },
+  ];
+  const templates = [];
+  for (const { account, region } of accounts) {
+    await mustPass(`Synthesising ${account}`, ['bun', 'app.ts'], join(appRoot, 'infra'), {
+      CDK_OUTDIR: join(outdir, account),
+      CDK_DEFAULT_ACCOUNT: account,
+      CDK_DEFAULT_REGION: region,
       DELETION_PROTECTION: 'false',
-      ENVIRONMENT_NAME: environment,
     });
-    const template = join(outdir, environment, `${NAME}-${environment}.template.json`);
-    check(existsSync(template), `ENVIRONMENT_NAME=${environment} did not synthesise the stack ${NAME}-${environment}`);
-    check(
-      (await readFile(template, 'utf8')).includes(`${NAME}-${environment}-state`),
-      `The ${environment} stack does not name its table after the environment`,
-    );
+    const template = join(outdir, account, `${NAME}.template.json`);
+    check(existsSync(template), `Account ${account} did not synthesise the stack ${NAME}`);
+    templates.push(await readFile(template, 'utf8'));
   }
+  check(templates[0]?.includes(`${NAME}-state`) === true, `The stack does not name its table ${NAME}-state`);
+  check(templates[0] === templates[1], 'The stack synthesises a different template in another account');
   await rm(outdir, { recursive: true, force: true });
 };
 
@@ -502,7 +512,7 @@ const testProfileIn = async (root: string, profile: ProfileCase): Promise<void> 
     await mustPass('bun mutation', ['bun', 'mutation'], appRoot);
   });
 
-  await step('each environment synthesises its own stack', () => synthEnvironments(appRoot));
+  await step('every account synthesises the same stack', () => synthEnvironments(appRoot));
 
   for (const breakage of breakagesFor(profile.state)) {
     await step(`fails: ${breakage.name}`, () => proveBreakageFails(appRoot, breakage));

@@ -38,4 +38,4 @@ if (props.enableAlarms) {
 }
 ```
 
-The API sets no account-level CloudWatch role. API Gateway logging needs one, so set it once per account.
+The API sets no account-level CloudWatch role. API Gateway logging needs one, and `infra/stack.ts` sets it once for the account.
