@@ -88,24 +88,31 @@ const probes: readonly Probe[] = [
     expected: 'The core is pure',
   },
   {
-    rule: 'a handler imports the gate',
+    rule: 'a handler imports the core',
     directory: 'api',
     source:
-      "import { createEventSourcedGate } from '@<project>/gate';\nexport const gate = createEventSourcedGate;",
-    expected: 'A handler only parses, validates, routes and maps the result',
+      "import { vocabulary } from '@<project>/core';\nexport const names = vocabulary;",
+    expected: 'A handler parses the request into a command',
+  },
+  {
+    rule: 'a handler imports the store',
+    directory: 'api',
+    source:
+      "import { createDocumentClient } from '@<project>/store';\nexport const client = createDocumentClient;",
+    expected: 'A handler parses the request into a command',
   },
   {
     rule: 'a handler calls an AWS SDK',
     directory: 'api',
     source:
       "import { DynamoDBClient } from '@aws-sdk/client-dynamodb';\nexport const client = new DynamoDBClient({});",
-    expected: 'A handler only parses, validates, routes and maps the result',
+    expected: 'A handler parses the request into a command',
   },
   {
     rule: 'a handler imports a package by its path',
     directory: 'api',
     source:
-      "import { registry } from '../../packages/router/index.ts';\nexport const routes = registry;",
+      "import { jsonBody } from '../../packages/schema/index.ts';\nexport const body = jsonBody;",
     expected: 'Import another workspace package by its name',
   },
   {
@@ -115,24 +122,10 @@ const probes: readonly Probe[] = [
     expected: 'global variable Bun',
   },
   {
-    rule: 'the router skips the adapters',
-    directory: 'packages/router',
-    source:
-      "import type { EventSourcedGate } from '@<project>/gate';\nexport type Gate = EventSourcedGate<never, never, never, never>;",
-    expected: 'The router only resolves the adapter for a variant',
-  },
-  {
-    rule: 'an adapter skips the gate',
-    directory: 'packages/adapters',
-    source:
-      "import { createDocumentClient } from '@<project>/store';\nexport const client = createDocumentClient;",
-    expected: 'An adapter translates a request into a command',
-  },
-  {
-    rule: 'the gate calls upward',
+    rule: 'the gate parses requests',
     directory: 'packages/gate',
     source:
-      "import { registry } from '@<project>/router';\nexport const routes = registry;",
+      "import { jsonBody } from '@<project>/schema';\nexport const body = jsonBody;",
     expected: 'The gate loads state from the store',
   },
   {
@@ -143,10 +136,17 @@ const probes: readonly Probe[] = [
     expected: 'The store persists state',
   },
   {
-    rule: 'a leaf package imports another package',
+    rule: 'the schema imports the store',
     directory: 'packages/schema',
     source:
-      "import { classifyError } from '@<project>/errors';\nexport const classify = classifyError;",
+      "import { createDocumentClient } from '@<project>/store';\nexport const client = createDocumentClient;",
+    expected: "The schema parses data at the boundary into the core's types",
+  },
+  {
+    rule: 'a leaf package imports another package',
+    directory: 'packages/errors',
+    source:
+      "import { jsonBody } from '@<project>/schema';\nexport const body = jsonBody;",
     expected: 'This package is a leaf',
   },
 ];

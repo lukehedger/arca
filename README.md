@@ -82,4 +82,4 @@ arca can be extended to bundle your org's standards and tools. Just fork it and 
 
 ## example
 
-`examples/account/` is a vertical slice through every layer of the request pipeline for both persistence modes: a ledger account with a handler, router, adapter, gate, core and store.
+`examples/account/` is a vertical slice through every layer of the request pipeline for both persistence modes: a ledger account with a handler, schema, gate, core and store.

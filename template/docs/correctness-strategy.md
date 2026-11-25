@@ -9,7 +9,7 @@ Each check proves one thing. Use the cheapest check that proves it. Run checks f
 | Check                     | Proves                                                                                                             | Runs                          |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
 | Lint and format           | The code follows every rule a tool can check, including the layer boundaries and the pure core in ARCHITECTURE.md. | Every change                  |
-| Types                     | Shapes agree across every boundary. An unhandled variant fails to compile.                                         | Every change                  |
+| Types                     | Shapes agree across every boundary. An unhandled union member fails to compile.                                    | Every change                  |
 | Fitness functions         | The names in DOMAIN.md match the code. Every invariant in DOMAIN.md has a property test that ran and passed.       | Every change                  |
 | Property tests            | Every invariant in DOMAIN.md holds for generated commands.                                                         | Every change                  |
 | Assertions                | The code fails loudly when a state it rules out occurs.                                                            | Every invocation              |

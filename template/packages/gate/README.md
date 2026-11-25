@@ -13,6 +13,8 @@ Each call returns one of these outcomes. Nothing is thrown except store failures
 - `replayed` - the stream already holds the idempotency key, so nothing was appended. Carries the current state.
 <!-- end -->
 
+Bind the gate once per entity, such as in `order.ts`. The binding is what handlers call. It raises `rejected` as a `DecisionRejectedError` and `conflict` as a `ConflictError`, so a handler maps every outcome through the errors package. It is also where the shell adds a fact from an external system to the command, before the gate reads the state.
+
 ## Public API
 
 <!-- if: event-sourcing -->
@@ -32,6 +34,7 @@ Each call returns one of these outcomes. Nothing is thrown except store failures
 
 ```ts
 import { decide, evolve, initialState } from '@<project>/core';
+import { ConflictError, DecisionRejectedError } from '@<project>/errors';
 import { createEventSourcedGate } from '@<project>/gate';
 
 const gate = createEventSourcedGate({ eventLog, initialState, decide, evolve });
@@ -41,6 +44,12 @@ const result = await gate.apply({
   command: { type: 'place_order' },
   idempotencyKey: request.idempotencyKey,
 });
-if (result.outcome === 'rejected') return toProblem(result.rejection);
+if (result.outcome === 'rejected') {
+  const { invariant } = result.rejection;
+  throw new DecisionRejectedError(invariant, `The command would break the ${invariant} rule`);
+}
+if (result.outcome === 'conflict') {
+  throw new ConflictError('Order order-1 changed during the request. Retry it.');
+}
 ```
 <!-- end -->

@@ -80,94 +80,12 @@
                     "group": [
                       "@<project>/*",
                       "!@<project>/schema",
-                      "!@<project>/router",
+                      "!@<project>/gate",
                       "!@<project>/telemetry",
                       "@aws-sdk/*",
                       "!@<project>/errors"
                     ],
-                    "message": "A handler only parses, validates, routes and maps the result. It calls the schema and the router. Move this logic down a layer."
-                  },
-                  {
-                    "group": [
-                      "../**/api/**",
-                      "../**/async/**",
-                      "../**/core/**",
-                      "../**/infra/**",
-                      "../**/packages/**",
-                      "../**/tools/**"
-                    ],
-                    "message": "Import another workspace package by its name so the layer rules apply."
-                  },
-                  {
-                    "group": ["bun", "bun:*", "!bun:test"],
-                    "message": "Bun is dev tooling only. Deployed code runs on Node.js."
-                  }
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "includes": ["packages/router/**"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noRestrictedImports": {
-              "level": "error",
-              "options": {
-                "patterns": [
-                  {
-                    "group": [
-                      "@<project>/*",
-                      "!@<project>/adapters",
-                      "!@<project>/schema",
-                      "!@<project>/telemetry",
-                      "!@<project>/errors"
-                    ],
-                    "message": "The router only resolves the adapter for a variant. It calls the adapters and nothing below them."
-                  },
-                  {
-                    "group": [
-                      "../**/api/**",
-                      "../**/async/**",
-                      "../**/core/**",
-                      "../**/infra/**",
-                      "../**/packages/**",
-                      "../**/tools/**"
-                    ],
-                    "message": "Import another workspace package by its name so the layer rules apply."
-                  },
-                  {
-                    "group": ["bun", "bun:*", "!bun:test"],
-                    "message": "Bun is dev tooling only. Deployed code runs on Node.js."
-                  }
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "includes": ["packages/adapters/**"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noRestrictedImports": {
-              "level": "error",
-              "options": {
-                "patterns": [
-                  {
-                    "group": [
-                      "@<project>/*",
-                      "!@<project>/gate",
-                      "!@<project>/schema",
-                      "!@<project>/telemetry",
-                      "!@<project>/errors"
-                    ],
-                    "message": "An adapter translates a request into a command and passes it to the gate. It calls nothing below the gate."
+                    "message": "A handler parses the request into a command, passes it to the gate and maps the result. Move any other logic down a layer."
                   },
                   {
                     "group": [
@@ -306,7 +224,42 @@
       }
     },
     {
-      "includes": ["packages/schema/**", "packages/errors/**"],
+      "includes": ["packages/schema/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["@<project>/*", "!@<project>/core"],
+                    "message": "The schema parses data at the boundary into the core's types. It imports only the core."
+                  },
+                  {
+                    "group": [
+                      "../**/api/**",
+                      "../**/async/**",
+                      "../**/core/**",
+                      "../**/infra/**",
+                      "../**/packages/**",
+                      "../**/tools/**"
+                    ],
+                    "message": "Import another workspace package by its name so the layer rules apply."
+                  },
+                  {
+                    "group": ["bun", "bun:*", "!bun:test"],
+                    "message": "Bun is dev tooling only. Deployed code runs on Node.js."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/errors/**"],
       "linter": {
         "rules": {
           "style": {

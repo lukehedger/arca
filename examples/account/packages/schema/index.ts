@@ -1,4 +1,5 @@
 export {
+  type AccountCommandMatchesCore,
   type AccountCommandRequest,
   type AccountResponse,
   accountCommandRequestSchema,
@@ -8,4 +9,4 @@ export {
   executeAccountCommandEventSchema,
 } from './account.ts';
 export { jsonBody } from './json-body.ts';
-export { type Variant, variantSchema, variants } from './variant.ts';
+export type { Assert, Same } from './same.ts';

@@ -1,28 +1,14 @@
 import { mapErrorToResponse, ValidationError } from '@<project>/errors';
-import type { AppRouter } from '@<project>/router';
+import type { AccountGate } from '@<project>/gate';
 import {
-  type AccountCommandRequest,
   type AccountResponse,
   executeAccountCommandEventSchema,
-  type Variant,
 } from '@<project>/schema';
 import type { ApiHandler } from '@<project>/telemetry';
 
-export type AccountsHandlerDeps = {
-  readonly executeCommand: (
-    variant: Variant,
-    request: AccountCommandRequest,
-  ) => Promise<AccountResponse>;
-};
+export type AccountsHandlerDeps = { readonly accounts: AccountGate };
 
 const JSON_HEADERS = { 'content-type': 'application/json' } as const;
-
-export const routeAccountCommands = (
-  router: AppRouter,
-): AccountsHandlerDeps => ({
-  executeCommand: (variant, request) =>
-    router.invoke(variant, 'executeCommand', request),
-});
 
 // POST /accounts/{accountId}/commands
 export const makeHandler =
@@ -36,14 +22,17 @@ export const makeHandler =
       );
     }
 
-    const { variant, request } = parsed.data;
-    return deps
-      .executeCommand(variant, request)
-      .then((account) => ({
-        statusCode: 200,
-        headers: JSON_HEADERS,
-        body: JSON.stringify(account),
-      }))
+    const { accountId } = parsed.data;
+    return deps.accounts
+      .execute(parsed.data)
+      .then((account) => {
+        const body: AccountResponse = { accountId, ...account };
+        return {
+          statusCode: 200,
+          headers: JSON_HEADERS,
+          body: JSON.stringify(body),
+        };
+      })
       .catch((error: unknown) =>
         mapErrorToResponse(error, context.awsRequestId),
       );

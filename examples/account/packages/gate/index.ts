@@ -3,7 +3,6 @@ export type {
   AccountCommandInput,
   AccountGate,
   AccountGateDeps,
-  AccountResult,
 } from './account.ts';
 export { createAccountGate, createDynamoDbAccountGate } from './account.ts';
 // if: event-sourcing

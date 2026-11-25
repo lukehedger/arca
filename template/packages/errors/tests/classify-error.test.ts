@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'bun:test';
 import {
-  CapabilityNotSupportedError,
   classifyError,
   ConflictError,
   DecisionRejectedError,
@@ -41,17 +40,6 @@ describe('classifyError', () => {
       statusCode: 409,
       code: 'Conflict',
       message: 'Account acc-1 changed during the request',
-      outcome: 'client_error',
-    });
-  });
-
-  test('classifies an absent capability as 422', () => {
-    expect(
-      classifyError(new CapabilityNotSupportedError('acme', 'refund')),
-    ).toEqual({
-      statusCode: 422,
-      code: 'CapabilityNotSupported',
-      message: 'acme does not support refund',
       outcome: 'client_error',
     });
   });
