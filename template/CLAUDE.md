@@ -20,13 +20,9 @@ The one exception is `.github/`. GitHub reads workflows, CODEOWNERS and the Copi
 
 **[MUST]** Read [ARCHITECTURE.md](ARCHITECTURE.md) before you design or implement a non-trivial change. It defines the core rules, the AWS strategy and the anti-patterns. If a change genuinely needs a rule to change, update ARCHITECTURE.md in the same change and give the reason.
 
-## Observability
-
-Each invocation emits exactly one structured log line that carries all the context gathered during the request. Handlers add identifiers to that context. They do not log each step.
-
 ## Dependencies
 
-**[MUST]** Define every third-party dependency version in the root `package.json` `catalog`. Use `catalog:` in workspace manifests and `workspace:*` for a dependency on another workspace package. Never put a version, range or tag directly in a workspace manifest.
+**[MUST]** Define the exact version of every third-party dependency in the root `package.json` `catalog`. Use `catalog:` in workspace manifests and `workspace:*` for a dependency on another workspace package. Never put a version, range or tag directly in a workspace manifest.
 
 ## Worktrees
 
@@ -53,26 +49,6 @@ The wren plugin refuses destructive Git and file commands and every AWS CLI call
 **[MUST]** Run `bun verify` from the repository root before you hand over a change and fix what it reports. It runs Biome lint and format, the type check, the fitness functions and the unit tests. It fails if any of them fails.
 
 **[MUST]** When you change `core/`, also run `bun mutation`. Add tests until it passes.
-
-## Security
-
-**[MUST]** Never commit API keys, secrets or credentials.
-
-**[MUST]** Never expose PII or sensitive data in logs. Log identifiers only.
-
-## Comments
-
-A comment is a durable note about code nuance for whoever opens the file in a year. It is not a record of the PR that introduced it.
-
-**[MUST]** Write from the perspective of the code as it now stands. Do not narrate the branch's history: earlier approaches, reverts or what a reviewer asked for. That belongs in the commit message or the PR description.
-
-**[MUST]** Explain why, never what. If the comment restates the code, delete it.
-
-**[SHOULD]** Use comments sparingly. Default to none.
-
-**[SHOULD]** Keep to one line, two at most.
-
-A comment that needs a paragraph means one of two things. Either the code is too complicated and needs simplifying, or the knowledge belongs in documentation such as DOMAIN.md, ARCHITECTURE.md or an ADR. Leave at most a one-line pointer in the code.
 
 ## Scope and TODOs
 
