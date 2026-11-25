@@ -18,7 +18,7 @@ export type InstrumentOptions = {
   readonly deadlineMarginMs?: number;
 };
 
-// Only the identity the Cognito authorizer asserted, so a caller cannot choose the client it is logged as.
+// Only the identity the authoriser asserted, so a caller cannot choose the client it is logged as.
 const authorisedClientId = (
   event: APIGatewayProxyEvent,
 ): string | undefined => {

@@ -3,7 +3,7 @@ name: aws
 description: >
   Read-only rules for investigating AWS accounts. Use when reading CloudWatch
   logs or metrics, diagnosing a failed CloudFormation deploy, inspecting
-  Lambda, DynamoDB, AppConfig or IAM state, reading X-Ray traces, or any task
+  Lambda, DynamoDB or IAM state, reading X-Ray traces, or any task
   that reads AWS account state without changing it.
 ---
 
