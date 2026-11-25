@@ -39,24 +39,38 @@ const completeOrder = (order: Order): Receipt => {
 
 **[MUST]** Each invocation emits one wide structured event with all the context gathered during the request. Add identifiers to that context. Do not log each step.
 
-**[MUST]** Never log whole objects. Log specific identifiers and values, never customer or card data. Prefer trace annotations for timing detail.
+**[MUST]** Never log whole objects, PII, card data or any other sensitive data. Log identifiers and specific values. Prefer trace annotations for timing detail.
 
 ## Naming
 
-**[SHOULD]** Get the nouns and verbs right. A good name gives the reader a crisp mental model and shows you understand the domain. Use the ubiquitous language in `DOMAIN.md`. Do not abbreviate.
+**[SHOULD]** Get the nouns and verbs right. A good name gives the reader a crisp mental model and shows you understand the domain. Use the ubiquitous language in `DOMAIN.md`, so a concept has one name everywhere. Do not abbreviate.
+
+**[MUST]** Name a function for its outcome in domain terms: `rejectExpiredOrder`, not `handle` or `procOrd`. Predicates read as assertions: `isRefundable`, `canCapture`. A name that needs "and" means the function does two things. Split it.
 
 Name AWS resources by their role in the data flow: `pending-fraud-analysis-queue`, not `fraud-queue`.
 
 ## Comments
 
-Follow the Comments section of `CLAUDE.md`. Write each comment as a sentence, with a space after `//`, a capital letter and a full stop.
+A comment is a durable note about code nuance for whoever opens the file in a year. It is not a record of the PR that introduced it.
+
+**[MUST]** Write from the perspective of the code as it now stands. Do not narrate the branch's history: earlier approaches, reverts or what a reviewer asked for. That belongs in the commit message or the PR description.
+
+**[MUST]** Explain why, never what. If the comment restates the code, delete it.
+
+**[SHOULD]** Use comments sparingly. Default to none.
+
+**[SHOULD]** Keep to one line, two at most. Write each comment as a sentence, with a space after `//`, a capital letter and a full stop.
+
+A comment that needs a paragraph means one of two things. Either the code is too complicated and needs simplifying, or the knowledge belongs in documentation such as DOMAIN.md, ARCHITECTURE.md or an ADR. Leave at most a one-line pointer in the code.
 
 ## Tests
 
 **[MUST]** Write them. Keep them short, simple and structured. Aim for confidence, not coverage. Tests live in a `tests/` folder at the root of the package under test, with the `.test.ts` suffix.
 
+**[MUST]** Write typed tests with `bun:test`. Use inline fakes passed through `deps`, not module mocks.
+
 ## Security and tooling
 
-**[MUST]** Never hard-code tokens or passwords. Treat the supply chain as a threat: every dependency is code you run without reading.
+**[MUST]** Never commit or hard-code API keys, tokens, passwords or other credentials. Treat the supply chain as a threat: every dependency is code you run without reading.
 
-**[SHOULD]** Minimise dependencies. Pin exact versions.
+**[SHOULD]** Minimise dependencies.

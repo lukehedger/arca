@@ -7,13 +7,7 @@ paths:
 
 `tsconfig.json` and `biome.json` already enforce strict mode, unchecked index access, `unknown` over `any`, `type` over `interface`, `import type`, `const` over `var`, named exports, kebab-case file names and bans on `!` and `@ts-ignore`. Fix what they report. Never disable a rule inline or in config to get a change through.
 
-The rules below need judgement.
-
-## Model the domain in types
-
-**[SHOULD]** Name types, functions and fields in the ubiquitous language of `DOMAIN.md`. A concept has one name everywhere.
-
-**[MUST]** Keep core logic pure. A decision takes state and input and returns a result, with no I/O inside.
+The rules below need judgement. `code-quality.md` holds the rules that hold for any language, including naming, comments and tests.
 
 ## Negative space
 
@@ -50,19 +44,36 @@ const parseAmount = (value: number): PositiveAmount | undefined =>
 
 **[MUST]** Parse a branded value again when you read it back from JSON or DynamoDB. Serialisation drops the brand. Arithmetic drops it too: `a - b` on two `PositiveAmount`s is a plain `number`, because the result may not be positive. Check it again.
 
-**[SHOULD]** Return a rejection as a value, so the caller must handle it. A decision is accepted or rejected. A rejection names the `InvariantName` it protects. The gate turns a rejection into a `DecisionRejectedError`.
+**[SHOULD]** Return a rejection as a value, so the caller must handle it. A decision is approved or rejected. A rejection names the `InvariantName` it protects. The gate turns a rejection into a `DecisionRejectedError`.
 
 ```ts
 type Decision =
-  | { readonly kind: 'accepted'; readonly events: readonly [Event, ...Event[]] }
-  | { readonly kind: 'rejected'; readonly invariant: InvariantName };
+  | { readonly outcome: 'approved'; readonly events: readonly [Event, ...Event[]] }
+  | { readonly outcome: 'rejected'; readonly rejection: { readonly invariant: InvariantName } };
 ```
+
+**[MUST]** Choose how to handle a bad case by asking who can cause it.
+
+| Case                                                                                        | Mechanism                                                    | Response                    |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------- |
+| A request that fails its schema                                                             | A Zod parse in the handler, which throws a `ValidationError` | 400                         |
+| A valid command that breaks an invariant                                                    | A rejection that names the invariant                         | 422                         |
+| A state the code rules out, such as a corrupt stream, a broken decider or an unparsed value | `assert` or `unreachable`                                    | 500 and the assertion alarm |
+
+A caller can cause the first two cases, so each one gets a response. Only a bug can cause the third, so it pages someone. Never assert on a case that a valid command can reach. A withdrawal larger than the balance is a rejection, because a caller can send it. Never reject a case that only a bug can reach, because the rejection hides the bug as a client error. A non-positive amount in the core is an assertion, because the handler's schema has already refused it.
 
 **[SHOULD]** Use a non-empty tuple, `readonly [T, ...T[]]`, where an empty list is illegal.
 
 **[SHOULD]** Check a registry or config literal with `satisfies`. It checks the shape without widening the literal types.
 
-**[MUST]** Assert what the types cannot rule out. In the core, call `assert` at the start and end of a decision: `assert(next.balance >= 0, 'Balance is negative after the command')`. `ARCHITECTURE.md` defines what happens when an assertion fails.
+**[MUST]** Assert what the types cannot rule out. Assert a core function's preconditions where it starts. Assert a state's postconditions in the function that builds the state, so that every path to the state checks them. `ARCHITECTURE.md` defines what happens when an assertion fails.
+
+```ts
+const openWith = (balance: number): Account => {
+  assert(balance >= 0, 'Balance is negative');
+  return { status: 'open', balance };
+};
+```
 
 ## Types
 
@@ -124,12 +135,6 @@ const contract = await readContract(id).catch((error: unknown) => {
 
 **[MUST]** Use PascalCase for types and classes, camelCase for functions and variables and UPPER_SNAKE_CASE for constants. Name factories `createX` or `makeX`. Do not prefix types with `I`.
 
-**[MUST]** Name a function for its outcome in domain terms: `rejectExpiredOrder`, not `handle` or `procOrd`. Predicates read as assertions: `isRefundable`, `canCapture`. A name that needs "and" means the function does two things. Split it.
-
 ## Lambda
 
 **[MUST]** Type handler events and results with `@types/aws-lambda`. Export `makeHandler(deps)` and parse the event against its schema before anything else.
-
-## Tests
-
-**[MUST]** Write typed tests with `bun:test`. Use inline fakes passed through `deps`, not module mocks.

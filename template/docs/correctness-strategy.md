@@ -24,7 +24,7 @@ Each check proves one thing. Use the cheapest check that proves it. Run checks f
 - **Fake only the layer below.** A shell test injects inline fakes for the layer it calls.
 - **Write one contract per interface.** A suite that every implementation passes, such as the store contract, runs against each implementation in the unit tests.
 - **Name the invariant.** Each property test names the DOMAIN.md invariant it checks. An invariant without a property fails a fitness function.
-- **Assert the negative space.** State what must never happen at the start and end of each core function. A failed assertion throws and is never caught to carry on. The gate then persists nothing, so the state stays as it was.
+- **Assert the negative space.** `.claude/rules/typescript.md` says where to assert and when to assert instead of reject. `ARCHITECTURE.md` says what a failed assertion does.
 - **Kill the mutants.** A surviving mutant is a change in behaviour that no test notices. Add the test that kills it.
 - **Start every bug fix with a failing test.** The test reproduces the bug before the fix lands.
 - **Fail with a fix.** A failing check says what broke, which rule it breaks and how to fix it.

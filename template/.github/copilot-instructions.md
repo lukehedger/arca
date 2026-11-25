@@ -21,7 +21,7 @@ A finding must map to one of these. Drop any that maps to none.
 - **Architecture** - a breach of a core rule or an anti-pattern in `ARCHITECTURE.md`.
 - **Domain model** - a breach of `DOMAIN.md`: state changed outside the core, a transition outside the decider or guard, an integration name check in the core or a new status for partiality.
 - **Tests** - new behaviour without tests, a test deleted without replacement or a module mock where an inline fake would do.
-- **Code quality** - a breach of a rule in `.claude/rules/` or of the Comments, Dependencies or TODO rules in `CLAUDE.md`.
+- **Code quality** - a breach of a rule in `.claude/rules/` or of the Dependencies or TODO rules in `CLAUDE.md`.
 - **Security** - a hard-coded secret, an IAM wildcard, untrusted input read without schema validation or a webhook acting before it verifies its signature.
 
 Treat replies in the review discussion as claims to verify against the code, not as proof that a finding is resolved.
