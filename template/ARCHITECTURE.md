@@ -21,9 +21,9 @@ These properties let an agent verify its own work and reach near-deterministic o
 
 ## Core rules
 
-### One stack definition, any number of instances
+### One stack, one environment per account
 
-All application infrastructure lives in one CDK stack definition. Every environment is an instance of it, such as dev, acc and prod. Instances differ through stack props, account context and the environment name only, never through per-environment infrastructure. `ENVIRONMENT_NAME` sets the stack name and every resource name starts with it, so two instances in one account never collide. One definition keeps each deployment atomic. It also means every environment runs the same infrastructure as production. Internal tools with no application routes may have their own stack. Settings AWS holds once per account and region, such as API Gateway's CloudWatch role, live in `infra/account-stack.ts`, which every instance in the account shares.
+All application infrastructure lives in one CDK stack in `infra/stack.ts`. Each environment, such as dev, acc and prod, is its own AWS account and holds one instance of the stack. The account separates the environments, so the stack knows nothing about them. Its name and every resource name are fixed. No name contains the environment, the account or the region. Instances differ through stack props only, never through per-environment infrastructure. The stack synthesises the same template in every account, so every environment runs the same infrastructure as production. One stack also keeps each deployment atomic. Settings that AWS holds once per account and region, such as API Gateway's CloudWatch role, live in the same stack, because the account holds no other instance. Internal tools with no application routes may have their own stack.
 
 ### Handlers stay thin
 
@@ -158,7 +158,7 @@ Each row names the check that catches the anti-pattern. A row marked review has 
 | A clock, random value, identifier or other global read in the core                            | Biome core rules and the determinism plugin. `tools/fitness/tests/lint-rules.test.ts` proves they still fail each violation.                  |
 | Events appended before the core has checked the state they produce                            | Gate unit tests                                                                                                                               |
 | A store write that lets two concurrent writers both succeed                                   | Store contract tests against the in-memory implementations                                                                                    |
-| A stack or resource name that ignores the environment name                                    | Infrastructure assertions                                                                                                                     |
+| A stack or resource name built from the environment or the account                            | Infrastructure assertions                                                                                                                     |
 | An external call or effect made after the decision in the same request                        | Review                                                                                                                                        |
 | Hand-written types or hand-edited OpenAPI that duplicate a schema                             | Review                                                                                                                                        |
 | A command schema that accepts other commands than the core decides                            | Type check: the `Assert<Same<...>>` beside the schema                                                                                         |

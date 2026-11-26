@@ -42,7 +42,7 @@ export class Api extends Construct {
       retention: RetentionDays.ONE_MONTH,
     });
 
-    // Access and execution logging need the account's API Gateway CloudWatch role, which is set once per account.
+    // Access and execution logging need the account's API Gateway CloudWatch role, which the stack sets once.
     this.restApi = new RestApi(this, 'Resource', {
       cloudWatchRole: false,
       deployOptions: {

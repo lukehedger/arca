@@ -1,7 +1,5 @@
 import { App } from 'aws-cdk-lib';
-import { AccountStack } from './account-stack.ts';
 import { AppStack } from './stack.ts';
-import { stackNameFor } from './stack-name.ts';
 
 const readRequiredEnv = (name: string): string => {
   const value = process.env[name];
@@ -24,9 +22,7 @@ const env = {
 
 const app = new App();
 
-new AccountStack(app, 'account', { env });
-
-new AppStack(app, stackNameFor(readRequiredEnv('ENVIRONMENT_NAME')), {
+new AppStack(app, '<project>', {
   deletionProtection: readBoolean('DELETION_PROTECTION'),
   env,
 });
