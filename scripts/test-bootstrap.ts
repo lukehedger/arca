@@ -265,12 +265,33 @@ const breakagesFor = (state: State): readonly Breakage[] => [
   },
   {
     name: 'architecture: a handler imports the store',
-    files: ['api/accounts/handler.ts'],
-    expected: 'A handler parses the request into a command',
+    files: ['api/accounts/execute-command.ts'],
+    expected: 'A handler declares its route with createApiHandler',
     apply: (appRoot) =>
       append(
-        join(appRoot, 'api/accounts/handler.ts'),
+        join(appRoot, 'api/accounts/execute-command.ts'),
         `import type { createDocumentClient } from '@${NAME}/store';\nexport type Leaked = typeof createDocumentClient;`,
+      ),
+  },
+  {
+    name: 'architecture: a handler maps errors by hand instead of through the factory',
+    files: ['api/accounts/read-account.ts'],
+    expected: 'A handler declares its route with createApiHandler',
+    apply: (appRoot) =>
+      append(
+        join(appRoot, 'api/accounts/read-account.ts'),
+        `import type { mapErrorToResponse } from '@${NAME}/errors';\nexport type Leaked = typeof mapErrorToResponse;`,
+      ),
+  },
+  {
+    name: 'boundary: a response leaves without passing its schema',
+    files: ['packages/http/api-handler.ts'],
+    expected: '(fail) createApiHandler > answers 500 as a failed assertion when the response breaks its schema',
+    apply: (appRoot) =>
+      edit(
+        join(appRoot, 'packages/http/api-handler.ts'),
+        'const body = route.response.safeParse(route.respond(result, input));',
+        'const body = { success: true as const, data: route.respond(result, input) };',
       ),
   },
   {

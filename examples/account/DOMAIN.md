@@ -159,6 +159,8 @@ open ──▶ closed
 
 The core enforces every invariant. A rejection names the invariant it protects. `core/tests/account-invariants.test.ts` holds one property per invariant.
 
+No invariant spans more than one account, so the conditional write on each account holds every invariant.
+
 ---
 
 ## 6. External systems
@@ -169,7 +171,7 @@ None. The ledger holds every account itself, so no command needs a fact from out
 
 ## 7. Contracts with the outside
 
-`POST /accounts/{accountId}/commands` takes `{ "command": { "type": "deposit_funds", "amount": 25 } }` and returns the account. `packages/schema/account.ts` defines both shapes and asserts that the command schema matches `AccountCommand`. A new optional field is a safe change. Any other change needs a new route.
+`POST /accounts/{accountId}/commands` takes `{ "command": { "type": "deposit_funds", "amount": 25 } }` and returns the account. `GET /accounts/{accountId}` returns the account, or a 404 when it does not exist. `packages/schema/account.ts` defines every shape and asserts that the command schema matches `AccountCommand`. A new optional field is a safe change. Any other change needs a new route.
 
 ---
 

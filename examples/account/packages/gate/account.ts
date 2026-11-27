@@ -9,7 +9,11 @@ import {
   evolve,
   initialState,
 } from '@<project>/core';
-import { ConflictError, DecisionRejectedError } from '@<project>/errors';
+import {
+  ConflictError,
+  DecisionRejectedError,
+  NotFoundError,
+} from '@<project>/errors';
 import {
   createDocumentClient,
   createDynamoDbEventLog,
@@ -24,7 +28,11 @@ import {
   type AccountRejection,
   decide,
 } from '@<project>/core';
-import { ConflictError, DecisionRejectedError } from '@<project>/errors';
+import {
+  ConflictError,
+  DecisionRejectedError,
+  NotFoundError,
+} from '@<project>/errors';
 import {
   createDocumentClient,
   createDynamoDbRecordStore,
@@ -43,8 +51,10 @@ export type AccountCommandInput = {
 };
 
 // Handlers see one shape whatever the persistence mode, so only this file and the core know the mode.
+// A read loads the same state the decider is given, so a response never shows a state a command would not see.
 export type AccountGate = {
   readonly execute: (input: AccountCommandInput) => Promise<Account>;
+  readonly read: (accountId: string) => Promise<Account>;
 };
 
 const rejectionError = (rejection: AccountRejection): DecisionRejectedError =>
@@ -57,6 +67,9 @@ const conflictError = (accountId: string): ConflictError =>
   new ConflictError(
     `Account ${accountId} changed during the request. Retry it.`,
   );
+
+const notFoundError = (accountId: string): NotFoundError =>
+  new NotFoundError(`Account ${accountId} does not exist`);
 
 // if: event-sourcing
 // Persisted events are external data, so they are parsed back into the core's event type.
@@ -100,6 +113,12 @@ export const createAccountGate = (deps: AccountGateDeps): AccountGate => {
       assert(result.state !== undefined, 'An applied command left no account');
       return result.state;
     },
+    read: async (accountId) => {
+      const account = await gate.load(accountId);
+      if (account === undefined) throw notFoundError(accountId);
+
+      return account;
+    },
   };
 };
 
@@ -138,6 +157,12 @@ export const createAccountGate = (deps: AccountGateDeps): AccountGate => {
       if (result.outcome === 'conflict') throw conflictError(accountId);
 
       return result.state;
+    },
+    read: async (accountId) => {
+      const account = await gate.load(accountId);
+      if (account === undefined) throw notFoundError(accountId);
+
+      return account;
     },
   };
 };

@@ -1,0 +1,19 @@
+{
+  "name": "@<project>/http",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "test:unit": "bun test"
+  },
+  "dependencies": {
+    "@<project>/errors": "workspace:*",
+    "@<project>/telemetry": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "catalog:"
+  }
+}
