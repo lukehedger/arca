@@ -1,0 +1,6 @@
+{
+  "name": "wren",
+  "version": "1.0.0",
+  "description": "Makes every change land in a Claude Code worktree that starts from a fresh origin/main",
+  "author": { "name": "Payments" }
+}

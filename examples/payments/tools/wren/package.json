@@ -1,0 +1,9 @@
+{
+  "name": "@payments/wren",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:mod": "bun scripts/test-mod.ts",
+    "test:unit": "bun test"
+  }
+}

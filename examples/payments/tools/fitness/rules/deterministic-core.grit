@@ -1,0 +1,16 @@
+language js
+
+// The core is a pure function of state and command, so it may use Math only through a named deterministic function.
+or {
+  `Math.random` as $random where {
+    register_diagnostic(span=$random, message="The core is deterministic, so it cannot call Math.random. Generate the value in the shell and pass it in with the command.", severity="error")
+  },
+  `Math[$_]` as $computed where {
+    register_diagnostic(span=$computed, message="Read Math by a named property, such as Math.max. A computed key can reach Math.random.", severity="error")
+  },
+  `Math` as $math where {
+    not $math <: within `Math.$_`,
+    not $math <: within `Math[$_]`,
+    register_diagnostic(span=$math, message="Call Math functions directly, such as Math.max(a, b). An alias of Math can reach Math.random.", severity="error")
+  }
+}

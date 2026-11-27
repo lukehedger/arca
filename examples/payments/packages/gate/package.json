@@ -1,0 +1,15 @@
+{
+  "name": "@payments/gate",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "test:unit": "bun test"
+  },
+  "dependencies": {
+    "@payments/errors": "workspace:*",
+    "@payments/store": "workspace:*"
+  }
+}
