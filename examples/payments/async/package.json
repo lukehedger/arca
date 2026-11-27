@@ -1,5 +1,17 @@
 {
   "name": "@payments/async",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "test:unit": "bun test"
+  },
+  "dependencies": {
+    "@aws/durable-execution-sdk-js": "catalog:",
+    "@payments/errors": "workspace:*",
+    "@payments/gate": "workspace:*",
+    "@payments/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@aws/durable-execution-sdk-js-testing": "catalog:"
+  }
 }

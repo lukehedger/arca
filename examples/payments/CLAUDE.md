@@ -1,6 +1,6 @@
 # Payments
 
-Payments takes a card payment through its lifecycle with an external payment service provider (PSP). It authorises an amount on the card. It then captures, voids or refunds that amount. The callbacks from the provider become commands on the same path as every other write. Checkout and order services depend on it to learn whether a payment is authorised, captured or refunded and how much money has moved.
+Payments takes a card payment through its lifecycle with an external payment service provider (PSP). It authorises an amount on the card. It then captures, voids or refunds that amount. The answers from the provider become commands on the same path as every other write. Checkout and order services depend on it to learn whether a payment is authorised, captured or refunded and how much money has moved.
 
 **[MUST]** Read [DOMAIN.md](DOMAIN.md) before you design or implement any change to the domain model. It defines the data model, lifecycle statuses, invariants and the external systems. If a change cannot fit the model, change the model deliberately and update DOMAIN.md in the same PR. Do not work around it locally.
 

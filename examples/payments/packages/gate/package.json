@@ -9,7 +9,9 @@
     "test:unit": "bun test"
   },
   "dependencies": {
+    "@payments/core": "workspace:*",
     "@payments/errors": "workspace:*",
-    "@payments/store": "workspace:*"
+    "@payments/store": "workspace:*",
+    "zod": "catalog:"
   }
 }
