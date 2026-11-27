@@ -1,0 +1,21 @@
+{
+  "agent": "wren",
+  "enabledPlugins": {
+    "wren@payments": true
+  },
+  "extraKnownMarketplaces": {
+    "payments": {
+      "source": {
+        "source": "directory",
+        "path": "."
+      }
+    }
+  },
+  "worktree": {
+    "baseRef": "fresh"
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bun \"$(git rev-parse --show-toplevel)/./tools/status-line/scripts/status-line.ts\""
+  }
+}

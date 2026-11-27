@@ -1,0 +1,4 @@
+# Copilot code review reads its rules from the pull request branch, so a human owner approves every change to them.
+/.github/copilot-instructions.md @lukehedger
+/CLAUDE.md @lukehedger
+/.claude/rules/ @lukehedger

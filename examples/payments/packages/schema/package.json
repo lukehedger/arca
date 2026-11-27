@@ -1,0 +1,15 @@
+{
+  "name": "@payments/schema",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "test:unit": "bun test"
+  },
+  "dependencies": {
+    "@payments/core": "workspace:*",
+    "zod": "catalog:"
+  }
+}

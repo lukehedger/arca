@@ -1,0 +1,12 @@
+{
+  "name": "@payments/fitness",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:unit": "bun test"
+  },
+  "dependencies": {
+    "@payments/core": "workspace:*",
+    "zod": "catalog:"
+  }
+}
