@@ -1,0 +1,17 @@
+{
+  "name": "@payments/constructs",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "test:unit": "bun test"
+  },
+  "dependencies": {
+    "@payments/telemetry": "workspace:*",
+    "aws-cdk-lib": "catalog:",
+    "constructs": "catalog:",
+    "esbuild": "catalog:"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "payments",
+  "description": "Payments's Claude Code plugins",
+  "owner": { "name": "@lukehedger" },
+  "plugins": [
+    {
+      "name": "wren",
+      "description": "Makes every change land in a worktree",
+      "source": "./tools/wren"
+    }
+  ]
+}

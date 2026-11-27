@@ -1,0 +1,5 @@
+{
+  "name": "@payments/api",
+  "private": true,
+  "type": "module"
+}

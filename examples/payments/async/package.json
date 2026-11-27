@@ -1,0 +1,5 @@
+{
+  "name": "@payments/async",
+  "private": true,
+  "type": "module"
+}

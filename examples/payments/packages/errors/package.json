@@ -1,0 +1,14 @@
+{
+  "name": "@payments/errors",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "test:unit": "bun test"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  }
+}

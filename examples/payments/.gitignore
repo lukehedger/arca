@@ -1,0 +1,9 @@
+node_modules
+cdk.out
+coverage
+.turbo
+.stryker-tmp
+reports
+
+# The types the Claude Code engine writes when it loads a plugin
+**/.claude-plugin/types/
