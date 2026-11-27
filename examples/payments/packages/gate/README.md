@@ -11,7 +11,12 @@ Each call returns one of these outcomes. Nothing is thrown except store failures
 - `conflict` - another write landed between the read and the write, so nothing was persisted. The caller may retry, which decides again on fresh state.
 - `replayed` - the stream already holds the idempotency key, so nothing was appended. Carries the current state.
 
-Bind the gate once per entity, such as in `order.ts`. The binding is what handlers call. It raises `rejected` as a `DecisionRejectedError` and `conflict` as a `ConflictError`, so a handler maps every outcome through the errors package. It is also where the shell adds a fact from an external system to the command, before the gate reads the state.
+Bind the gate once per entity, such as in `order.ts`. The binding is what handlers call. It exposes two methods:
+
+- `execute` runs a command through `apply`. It raises `rejected` as a `DecisionRejectedError` and `conflict` as a `ConflictError`, so a handler maps every outcome through the errors package.
+- `read` returns the entity's state through `load`, which is the same load the decider receives. It raises a `NotFoundError` when the entity does not exist. It never calls `decide`.
+
+The binding is also where the shell adds a fact to the command, before the gate reads the state. A fact comes from an external system or from the `read` of another entity's binding, passed in through the deps. ARCHITECTURE.md says how an invariant that spans entities holds.
 
 ## Public API
 

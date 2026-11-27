@@ -68,7 +68,49 @@
       }
     },
     {
-      "includes": ["api/**", "async/**"],
+      "includes": ["api/**", "!api/**/tests/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@payments/*",
+                      "!@payments/schema",
+                      "!@payments/gate",
+                      "!@payments/http",
+                      "!@payments/telemetry",
+                      "@aws-sdk/*"
+                    ],
+                    "message": "A handler declares its route with createApiHandler, which parses the request, calls the gate and maps the result. Move any other logic down a layer."
+                  },
+                  {
+                    "group": [
+                      "../**/api/**",
+                      "../**/async/**",
+                      "../**/core/**",
+                      "../**/infra/**",
+                      "../**/packages/**",
+                      "../**/tools/**"
+                    ],
+                    "message": "Import another workspace package by its name so the layer rules apply."
+                  },
+                  {
+                    "group": ["bun", "bun:*", "!bun:test"],
+                    "message": "Bun is dev tooling only. Deployed code runs on Node.js."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["async/**", "api/**/tests/**"],
       "linter": {
         "rules": {
           "style": {
@@ -86,6 +128,45 @@
                       "!@payments/errors"
                     ],
                     "message": "A handler parses the request into a command, passes it to the gate and maps the result. Move any other logic down a layer."
+                  },
+                  {
+                    "group": [
+                      "../**/api/**",
+                      "../**/async/**",
+                      "../**/core/**",
+                      "../**/infra/**",
+                      "../**/packages/**",
+                      "../**/tools/**"
+                    ],
+                    "message": "Import another workspace package by its name so the layer rules apply."
+                  },
+                  {
+                    "group": ["bun", "bun:*", "!bun:test"],
+                    "message": "Bun is dev tooling only. Deployed code runs on Node.js."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/http/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@payments/*",
+                      "!@payments/errors",
+                      "!@payments/telemetry"
+                    ],
+                    "message": "The HTTP package turns a route declaration into a handler. It maps errors and knows nothing of the gate, the store or the core."
                   },
                   {
                     "group": [

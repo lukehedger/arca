@@ -92,20 +92,34 @@ const probes: readonly Probe[] = [
     directory: 'api',
     source:
       "import { vocabulary } from '@payments/core';\nexport const names = vocabulary;",
-    expected: 'A handler parses the request into a command',
+    expected: 'A handler declares its route with createApiHandler',
   },
   {
     rule: 'a handler imports the store',
     directory: 'api',
     source:
       "import { createDocumentClient } from '@payments/store';\nexport const client = createDocumentClient;",
-    expected: 'A handler parses the request into a command',
+    expected: 'A handler declares its route with createApiHandler',
   },
   {
     rule: 'a handler calls an AWS SDK',
     directory: 'api',
     source:
       "import { DynamoDBClient } from '@aws-sdk/client-dynamodb';\nexport const client = new DynamoDBClient({});",
+    expected: 'A handler declares its route with createApiHandler',
+  },
+  {
+    rule: 'a handler maps errors by hand',
+    directory: 'api',
+    source:
+      "import { mapErrorToResponse } from '@payments/errors';\nexport const map = mapErrorToResponse;",
+    expected: 'A handler declares its route with createApiHandler',
+  },
+  {
+    rule: 'an async handler imports the store',
+    directory: 'async',
+    source:
+      "import { createDocumentClient } from '@payments/store';\nexport const client = createDocumentClient;",
     expected: 'A handler parses the request into a command',
   },
   {
@@ -127,6 +141,12 @@ const probes: readonly Probe[] = [
     source:
       "import { jsonBody } from '@payments/schema';\nexport const body = jsonBody;",
     expected: 'The gate loads state from the store',
+  },
+  {
+    rule: 'the HTTP package calls the gate',
+    directory: 'packages/http',
+    source: "import * as gate from '@payments/gate';\nexport const all = gate;",
+    expected: 'The HTTP package turns a route declaration into a handler',
   },
   {
     rule: 'the store imports the core',
