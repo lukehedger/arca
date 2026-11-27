@@ -57,6 +57,17 @@
         "@payments/store": "workspace:*",
       },
     },
+    "packages/http": {
+      "name": "@payments/http",
+      "dependencies": {
+        "@payments/errors": "workspace:*",
+        "@payments/telemetry": "workspace:*",
+        "zod": "catalog:",
+      },
+      "devDependencies": {
+        "@types/aws-lambda": "catalog:",
+      },
+    },
     "packages/schema": {
       "name": "@payments/schema",
       "dependencies": {
@@ -381,6 +392,8 @@
     "@payments/fitness": ["@payments/fitness@workspace:tools/fitness"],
 
     "@payments/gate": ["@payments/gate@workspace:packages/gate"],
+
+    "@payments/http": ["@payments/http@workspace:packages/http"],
 
     "@payments/schema": ["@payments/schema@workspace:packages/schema"],
 

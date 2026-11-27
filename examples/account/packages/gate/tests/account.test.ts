@@ -1,4 +1,8 @@
-import { ConflictError, DecisionRejectedError } from '@<project>/errors';
+import {
+  ConflictError,
+  DecisionRejectedError,
+  NotFoundError,
+} from '@<project>/errors';
 import { describe, expect, test } from 'bun:test';
 // if: event-sourcing
 import { type AccountEvent, AssertionError } from '@<project>/core';
@@ -66,6 +70,28 @@ describe('account gate', () => {
     await expect(result).rejects.toMatchObject({
       code: 'account-opens-first',
     });
+  });
+
+  test('reads the state the last command left', async () => {
+    const gate = createGate();
+    await gate.execute({
+      accountId: 'acc-1',
+      command: { type: 'open_account' },
+      idempotencyKey: undefined,
+    });
+    await gate.execute({
+      accountId: 'acc-1',
+      command: { type: 'deposit_funds', amount: 25 },
+      idempotencyKey: undefined,
+    });
+
+    expect(await gate.read('acc-1')).toEqual({ status: 'open', balance: 25 });
+  });
+
+  test('raises not found when reading an account that never opened', async () => {
+    const result = createGate().read('acc-1');
+
+    await expect(result).rejects.toBeInstanceOf(NotFoundError);
   });
 
   test('raises a conflict when another write won the race', async () => {

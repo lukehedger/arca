@@ -141,12 +141,13 @@ Request ──▶ Guard ──▶ Transition ──▶ Conditional write
 |           |         |
 
 <!-- How invariants are declared and resolved. The rule that only the core enforces them. -->
+<!-- Each invariant that spans more than one entity and the way it holds: inside one entity, in one transaction or eventually. ARCHITECTURE.md defines the three. Write "None" if no invariant spans entities. -->
 
 ---
 
 ## 6. External systems
 
-<!-- Each fact the shell fetches from an external system before a decision and the command field that carries it. -->
+<!-- Each fact the shell fetches from an external system or another entity before a decision and the command field that carries it. -->
 <!-- Each effect that follows an approved decision and the async handler that runs it. -->
 <!-- How inbound callbacks from external systems resolve to the <entity> and become commands on the same path as every other write. -->
 

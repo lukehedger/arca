@@ -6,12 +6,13 @@
     "test:unit": "bun test"
   },
   "dependencies": {
-    "@<project>/errors": "workspace:*",
     "@<project>/gate": "workspace:*",
+    "@<project>/http": "workspace:*",
     "@<project>/schema": "workspace:*",
     "@<project>/telemetry": "workspace:*"
   },
   "devDependencies": {
+    "@<project>/errors": "workspace:*",
     "@types/aws-lambda": "catalog:"
   }
 }

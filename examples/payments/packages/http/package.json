@@ -1,0 +1,19 @@
+{
+  "name": "@payments/http",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "test:unit": "bun test"
+  },
+  "dependencies": {
+    "@payments/errors": "workspace:*",
+    "@payments/telemetry": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "catalog:"
+  }
+}

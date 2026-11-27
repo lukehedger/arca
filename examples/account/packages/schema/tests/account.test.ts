@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import { executeAccountCommandEventSchema } from '../index.ts';
+import {
+  executeAccountCommandEventSchema,
+  readAccountEventSchema,
+} from '../index.ts';
 
 const event = (overrides: Record<string, unknown> = {}) => ({
   pathParameters: { accountId: 'acc-1' },
@@ -71,6 +74,22 @@ describe('executeAccountCommandEventSchema', () => {
     const parsed = executeAccountCommandEventSchema.safeParse(
       event({ pathParameters: { accountId: 'acc/1' } }),
     );
+
+    expect(parsed.success).toBe(false);
+  });
+});
+
+describe('readAccountEventSchema', () => {
+  test('reads the account id from the path', () => {
+    expect(
+      readAccountEventSchema.parse({ pathParameters: { accountId: 'acc-1' } }),
+    ).toEqual({ accountId: 'acc-1' });
+  });
+
+  test('rejects an account id outside the allowed characters', () => {
+    const parsed = readAccountEventSchema.safeParse({
+      pathParameters: { accountId: 'acc/1' },
+    });
 
     expect(parsed.success).toBe(false);
   });

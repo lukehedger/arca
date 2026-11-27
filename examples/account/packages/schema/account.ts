@@ -62,3 +62,8 @@ export const executeAccountCommandEventSchema = z
     command: body.command,
     idempotencyKey: headers,
   }));
+
+// Parses the API Gateway event for GET /accounts/{accountId}.
+export const readAccountEventSchema = z
+  .object({ pathParameters: z.object({ accountId: accountIdSchema }) })
+  .transform(({ pathParameters }) => ({ accountId: pathParameters.accountId }));

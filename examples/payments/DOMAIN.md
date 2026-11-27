@@ -172,6 +172,8 @@ authorising ──▶ authorised ──▶ voiding ──▶ voided
 
 The core enforces every invariant. A rejection names the invariant it protects. `core/tests/payment-invariants.test.ts` holds one property per invariant.
 
+No invariant spans more than one payment, so the conditional write on each payment holds every invariant.
+
 ---
 
 ## 6. External systems

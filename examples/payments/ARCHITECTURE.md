@@ -10,7 +10,7 @@ Reliability comes first. Make everything observable, monitor and analyse it cont
 
 The architecture is Lambda-centric, with the fewest infrastructure components and third-party dependencies that do the job.
 
-The domain is modelled as state transitions governed by rules (see DOMAIN.md). The rules live in a pure _functional core_. An _imperative shell_ of closed layers surrounds the core and does all I/O. Each layer can only call the layer directly below it. Every request that enters the shell becomes one of the core's commands.
+The domain is modelled as state transitions governed by rules (see DOMAIN.md). The rules live in a pure _functional core_. An _imperative shell_ of closed layers surrounds the core and does all I/O. Each layer can only call the layer directly below it. Every request that enters the shell becomes a command for the core or a read of an entity's state.
 
 These properties let an agent verify its own work and reach near-deterministic outcomes:
 
@@ -27,7 +27,11 @@ All application infrastructure lives in one CDK stack in `infra/stack.ts`. Each 
 
 ### Handlers stay thin
 
-A handler parses the request into a command with a schema, passes the command to the gate and maps the result. It holds no business logic and no direct SDK calls. Handlers export `makeHandler(deps)` so tests inject inline fakes. A handler that is hard to fake has absorbed logic from a lower layer.
+A handler declares its route with `createApiHandler` from the HTTP package. The declaration names the request schema, the gate call, the response schema and a `respond` function that builds the body from the result. The factory parses the request, calls the gate, parses the response and maps every error through the errors package. A handler holds no business logic, no direct SDK calls and no error mapping.
+
+The factory comes before the three uses that `.claude/rules/code-quality.md` asks an abstraction to wait for. This document fixes the pipeline that every route follows, so its use cases are known in advance. A route that needs another status, a header or a body that is not JSON extends the factory. Every route keeps its own Lambda function, so each one has its own permissions, alarms and metrics.
+
+Handlers export `makeHandler(deps)` so tests inject inline fakes. A handler that is hard to fake has absorbed logic from a lower layer.
 
 ### The request pipeline is a fixed sequence of layers
 
@@ -36,10 +40,10 @@ API Gateway  ->  handler  ->  gate  ->  store
 async event  ->     |          |      load, persist
                     v          v
                  schema       core
-                 parse       decide
+                 parse    decide, project
 ```
 
-Every request takes this path, whether API Gateway or an async trigger delivers it. The handler parses the request into a command. The gate asks the core for a decision on it and the store persists the decision.
+Every request takes this path, whether API Gateway or an async trigger delivers it. The handler parses the request into a command or a read. For a command, the gate asks the core for a decision and the store persists the decision. For a read, the gate loads the state and returns it.
 
 Shell layers only call the layer below. Skipping a layer or calling upward removes the separation that makes each layer testable and replaceable on its own.
 
@@ -53,9 +57,25 @@ The gate runs every state change in three steps. It loads the current state from
 
 State is an append-only stream of immutable events. Current state is a projection of those events and is never stored or mutated in place. Append-only removes write conflicts, gives a complete audit trail and makes commands idempotent. The gate projects the new events through `evolve` before it appends them, so an event that fails a core assertion never reaches the stream.
 
+### Reads go through the gate
+
+The binding of the gate for each entity owns that entity's state. It guards every change to the state and serves every read of it. A read loads the state from the store and returns it. It never calls the decider, because a read changes nothing. A read of an entity that does not exist raises a `NotFoundError`.
+
+The gate already loads the state for every command, so a read reuses that load. The result is one definition of current state: a response shows the state that the next command is decided against. A second path from storage to state, such as a handler that replays events itself, can drift from it.
+
+A binding may call the read of another entity's binding to fetch a fact for a decision. These calls stay inside the gate layer, so the closed-layer rule allows them. Pass the other binding in through the deps.
+
+A query across entities, such as a list or a search, needs a read model. A read model is a table that a stream consumer keeps up to date, so it is an architectural decision (see AWS strategy). Do not serve such a query by loading every entity through the gate.
+
 ### External calls stay outside the decision
 
 The core decides on the facts it receives. A fact from an external system, such as a price or a verification result, is shell work. Fetch it in the binding of the gate for the entity, before the gate reads the state. Pass it to the core as a field of the command, the same way the shell passes the time.
+
+The state of another entity is a fact too. The conditional write protects only the entity that the gate writes. The other entity can change between the read and the write. An invariant that spans entities therefore needs its own way to hold. DOMAIN.md names each one and the way it holds:
+
+- **Inside one entity** - the two things that must agree become one entity.
+- **In one transaction** - the write checks the version of the other entity in the same transaction. The store interface and its contract suite gain the check.
+- **Eventually** - a durable function checks the invariant after the write and compensates. The invariant can break for a short time.
 
 An effect that must follow an approved decision, such as a notification, runs in `async/` from the persisted outcome. Never make it inline in the same request after the gate returns. A failure there leaves the decision persisted and the effect lost.
 
@@ -65,7 +85,7 @@ Schemas define every request and response shape. They produce the compile-time t
 
 ### The boundary parses straight into the core's commands
 
-A handler's schema parses each request into one of the core's commands. The command schema and the core's command type must accept the same values. Assert it beside the schema with `Assert<Same<z.infer<typeof schema>, Command>>` from the schema package, so a command on one side only fails to compile. Never widen a union to `string`, cast away exhaustiveness or add a default case that hides an unhandled member.
+The schema of a command route parses each request into one of the core's commands. The command schema and the core's command type must accept the same values. Assert it beside the schema with `Assert<Same<z.infer<typeof schema>, Command>>` from the schema package, so a command on one side only fails to compile. Never widen a union to `string`, cast away exhaustiveness or add a default case that hides an unhandled member.
 
 ### The core is deterministic
 
@@ -110,12 +130,12 @@ A durable execution that exhausts its retries records FAILED instead of throwing
 - `api/` - thin Lambda handlers behind API Gateway
 - `async/` - handlers for durable functions, queues, schedules and streams
 - `core/` - the functional core: state, transitions and domain rules
-- `packages/` - shared libraries: schema, gate, store, errors, telemetry and CDK constructs
+- `packages/` - shared libraries: schema, http, gate, store, errors, telemetry and CDK constructs
 - `infra/` - the CDK app
 - `tools/` - repo-internal CLIs that agents run: the fitness functions and the status line
 - `docs/` - strategy documents and agent design
 
-Each top-level directory and each package holds its modules directly, with no `src/` directory between. A handler lives at `api/<resource>/handler.ts`, the core model at `core/payment.ts`, the stack at `infra/stack.ts` and a package's entry point at `packages/<name>/index.ts`. Tests sit beside the modules in `tests/`.
+Each top-level directory and each package holds its modules directly, with no `src/` directory between. A handler lives at `api/<resource>/<operation>.ts` (such as `api/orders/read-order.ts`), the core model at `core/payment.ts`, the stack at `infra/stack.ts` and a package's entry point at `packages/<name>/index.ts`. Tests sit beside the modules in `tests/`.
 
 ## Stack
 
@@ -137,7 +157,9 @@ Common changes are additive and touch a small, predictable set of places. A chan
 
 - **New command** - a name in DOMAIN.md and `core/vocabulary.ts`, a case in the decider, a member of the command schema and tests. Handlers and infrastructure stay unchanged.
 - **New external fact** - a call in the binding of the gate for the entity and a field on the command that carries the result.
-- **New route** - a route entry in the stack and a thin handler.
+- **New route** - a route entry in the stack and a handler declared with `createApiHandler`.
+- **New read** - a `read` on the binding of the gate for the entity, a schema for the event and a new route.
+- **New query across entities** - a read model, which is an architectural decision.
 - **Shared code** - an existing package where it fits. Create a package only for a distinct responsibility.
 
 ## Anti-patterns
@@ -147,7 +169,13 @@ Each row names the check that catches the anti-pattern. A row marked review has 
 | Anti-pattern                                                                                  | Caught by                                                                                                                                     |
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | A second application stack definition, or infrastructure split per feature or per environment | Review                                                                                                                                        |
-| Business logic or lifecycle handling in a handler                                             | Partly by Biome, which stops a handler importing the core, the store or an AWS SDK. Logic written inline needs review.                        |
+| Business logic or lifecycle handling in a handler                                             | Partly by Biome, which stops a handler importing the core, the store, the errors package or an AWS SDK. Logic written inline needs review.    |
+| A handler that maps errors or builds its response outside `createApiHandler`                  | Biome layer import rules. A handler may not import the errors package.                                                                        |
+| A response that leaves the system without passing its schema                                  | HTTP unit tests                                                                                                                               |
+| A read that loads or projects state outside the gate                                          | Biome layer import rules                                                                                                                      |
+| A read sent through the decider as a command                                                  | Review                                                                                                                                        |
+| An invariant that spans entities, with no way to hold it named in DOMAIN.md                   | Review                                                                                                                                        |
+| A query across entities served by loading every entity through the gate                       | Review                                                                                                                                        |
 | A layer calling upward or skipping the layer below                                            | Biome layer import rules                                                                                                                      |
 | State changed anywhere but through the gate and the core                                      | Biome layer import rules. Only the gate may import the store. Only the gate and the schema may import the core.                               |
 | The core calling the store or performing any other I/O                                        | Biome core rules                                                                                                                              |

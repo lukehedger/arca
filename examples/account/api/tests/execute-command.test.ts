@@ -1,12 +1,12 @@
+import { describe, expect, test } from 'bun:test';
 import {
   ConflictError,
   DecisionRejectedError,
   errorBodySchema,
 } from '@<project>/errors';
 import type { AccountGate } from '@<project>/gate';
-import { describe, expect, test } from 'bun:test';
-import { makeHandler } from '../accounts/handler.ts';
-import { commandEvent, lambdaContext } from './api-event.ts';
+import { makeHandler } from '../accounts/execute-command.ts';
+import { apiEvent, lambdaContext } from './api-event.ts';
 
 type Execute = AccountGate['execute'];
 
@@ -19,9 +19,22 @@ const failingWith =
     throw error;
   };
 
+const commandEvent = (
+  accountId: string,
+  body: unknown,
+  headers: Readonly<Record<string, string>> = {},
+) =>
+  apiEvent({
+    httpMethod: 'POST',
+    resource: '/accounts/{accountId}/commands',
+    pathParameters: { accountId },
+    headers,
+    body: typeof body === 'string' ? body : JSON.stringify(body),
+  });
+
 const deposit = { command: { type: 'deposit_funds', amount: 25 } };
 
-describe('accounts handler', () => {
+describe('execute command handler', () => {
   test('passes the parsed command to the gate and returns the account', async () => {
     const received: unknown[] = [];
     const execute: Execute = async (input) => {

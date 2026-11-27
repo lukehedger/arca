@@ -30,15 +30,15 @@ The wren plugin refuses destructive Git and file commands, such as a force push 
 
 ## Layout
 
-| Directory   | Holds                                                               |
-| ----------- | ------------------------------------------------------------------- |
-| `api/`      | Thin Lambda handlers behind API Gateway, one directory per resource |
-| `async/`    | Handlers for durable functions, queues, schedules and streams       |
-| `core/`     | The functional core: state, transitions and domain rules            |
-| `packages/` | The shell layers and shared libraries, one workspace package each   |
-| `infra/`    | The CDK app and stack                                               |
-| `tools/`    | The fitness functions, the status line and the wren plugin          |
-| `docs/`     | Strategy documents                                                  |
+| Directory   | Holds                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------ |
+| `api/`      | Thin Lambda handlers behind API Gateway, one directory per resource and one file per route |
+| `async/`    | Handlers for durable functions, queues, schedules and streams                              |
+| `core/`     | The functional core: state, transitions and domain rules                                   |
+| `packages/` | The shell layers and shared libraries, one workspace package each                          |
+| `infra/`    | The CDK app and stack                                                                      |
+| `tools/`    | The fitness functions, the status line and the wren plugin                                 |
+| `docs/`     | Strategy documents                                                                         |
 
 ## Documents
 
