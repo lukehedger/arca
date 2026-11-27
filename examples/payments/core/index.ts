@@ -7,9 +7,16 @@ export type {
   PaymentDecision,
   PaymentEvent,
   PaymentRejection,
+  PaymentRequestCommand,
   PaymentState,
+  PendingOperation,
 } from './payment.ts';
-export { decide, evolve, initialState } from './payment.ts';
+export {
+  decide,
+  evolve,
+  initialState,
+  pendingOperations,
+} from './payment.ts';
 export type {
   CommandName,
   EventName,

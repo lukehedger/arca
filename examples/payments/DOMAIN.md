@@ -180,29 +180,36 @@ No invariant spans more than one payment, so the conditional write on each payme
 
 No command needs a fact from outside before its decision.
 
-Each request event is followed by one call to the provider in the same HTTP request:
+The provider answers a request after the request event is persisted, never in the same HTTP request. The API appends the request event and returns the payment with the operation pending. A caller reads the payment to learn the answer.
 
-- `authorisation_requested` - the handler asks the provider to authorise the amount.
-- `capture_requested` - the handler asks the provider to capture the amount against the provider reference. It sends the capture id as the idempotency key.
-- `refund_requested` - the handler asks the provider to refund the amount. It sends the refund id as the idempotency key.
-- `void_requested` - the handler asks the provider to release the rest of the authorisation.
+The stream of the state table starts the `resolve-operations` durable function for each batch of new events. For each payment in the batch, the function reads the pending operations through the gate. It asks the provider about each one in a step of its own:
 
-The handler then sends the matching confirm or fail command through the core, on the same path as every other write. `confirm_authorisation` carries the provider reference.
+- Authorisation - the function asks the provider to authorise the amount. It sends the payment id as the idempotency key, because a payment holds one authorisation.
+- Capture - the function asks the provider to capture the amount against the provider reference. It sends the capture id as the idempotency key.
+- Refund - the function asks the provider to refund the amount. It sends the refund id as the idempotency key.
+- Void - the function asks the provider to release the rest of the authorisation.
+
+The function then sends the matching confirm or fail command through the gate, on the same path as every other write. `confirm_authorisation` carries the provider reference. A definite refusal from the provider becomes the fail command.
+
+A provider call that throws has no answer yet, such as after a timeout. Its step retries with the same idempotency key, so a retried call moves money once. An answer that another execution already applied breaks `operations-resolve-once`, and the function counts the operation as resolved.
+
+The stream consumer is an architectural decision. It earns its place because every event the function reacts to lands in the state table, so a subscription replaces a call at each write site.
 
 No inbound callback reaches the payment.
 
 Open questions:
 
-- Which provider does the system use? The answer names its API and its error taxonomy.
-- A provider timeout leaves an operation pending. Reconciliation is not designed yet.
+- Which provider does the system use? The answer names its API, its error taxonomy and the real client that replaces the fake in the tests.
+- Is a repeated void safe at the provider? The void call carries no idempotency key, because a payment can request a void again after `fail_void`.
+- An execution that exhausts its step retries leaves the operation pending. The stream retries the batch until the record expires after 24 hours. Nothing resolves the operation after that.
 
 ---
 
 ## 7. Contracts with the outside
 
-`POST /payments/{paymentId}/commands` takes `{ "command": { "type": "request_capture", "captureId": "capture-1", "amount": 500 } }` and returns the payment.
+`POST /payments/{paymentId}/commands` takes `{ "command": { "type": "request_capture", "captureId": "capture-1", "amount": 500 } }` and returns the payment. `GET /payments/{paymentId}` returns the payment. The payment carries its status, currency, amount and, once authorised, the provider reference with every capture and refund and its status.
 
-The public schema accepts only the four request commands. Only the handler issues confirm and fail commands, after the provider answers. No caller can therefore confirm money the provider did not move.
+The public schema accepts only the four request commands. Only `resolve-operations` issues confirm and fail commands, after the provider answers. No caller can therefore confirm money the provider did not move.
 
 `packages/schema/payment.ts` defines both shapes. A new optional field is a safe change. Any other change needs a new route.
 

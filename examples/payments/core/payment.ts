@@ -39,6 +39,12 @@ export type PaymentCommand =
   | Command<'confirm_void'>
   | Command<'fail_void'>;
 
+// The commands a caller may send. Only the provider's answer confirms or fails one.
+export type PaymentRequestCommand = Extract<
+  PaymentCommand,
+  { readonly type: `request_${string}` }
+>;
+
 export type PaymentEvent =
   | Event<'authorisation_requested', Authorisation>
   | Event<'authorisation_confirmed', Confirmation>
@@ -81,6 +87,13 @@ export type PaymentDecision =
       readonly events: readonly [PaymentEvent, ...PaymentEvent[]];
     }
   | { readonly outcome: 'rejected'; readonly rejection: PaymentRejection };
+
+// The provider call each pending operation waits on, with what the call needs.
+export type PendingOperation =
+  | Readonly<{ type: 'authorisation' } & Authorisation>
+  | Readonly<{ type: 'capture' } & Capture & Confirmation & { amount: number }>
+  | Readonly<{ type: 'refund' } & Refund & Confirmation & { amount: number }>
+  | Readonly<{ type: 'void' } & Confirmation>;
 
 export const initialState: PaymentState = undefined;
 
@@ -344,6 +357,62 @@ const resolved = (
   );
   return { ...operations, [id]: { amount: operation.amount, status } };
 };
+
+export const pendingOperations = (
+  payment: Payment,
+): readonly PendingOperation[] => {
+  switch (payment.status) {
+    case 'authorising':
+      return [
+        {
+          type: 'authorisation',
+          currency: payment.currency,
+          amount: payment.amount,
+        },
+      ];
+    case 'declined':
+      return [];
+    case 'authorised':
+    case 'voiding':
+    case 'voided':
+      return pendingAfterAuthorisation(payment);
+    default:
+      return unreachable(payment, 'Unhandled payment status');
+  }
+};
+
+const pendingAfterAuthorisation = (
+  payment: AuthorisedPayment,
+): readonly PendingOperation[] => {
+  const { providerReference } = payment;
+  const captures = pendingIn(payment.captures).map(
+    ([captureId, amount]): PendingOperation => ({
+      type: 'capture',
+      captureId,
+      amount,
+      providerReference,
+    }),
+  );
+  const refunds = pendingIn(payment.refunds).map(
+    ([refundId, amount]): PendingOperation => ({
+      type: 'refund',
+      refundId,
+      amount,
+      providerReference,
+    }),
+  );
+  const voids: readonly PendingOperation[] =
+    payment.status === 'voiding' ? [{ type: 'void', providerReference }] : [];
+
+  return [...captures, ...refunds, ...voids];
+};
+
+const pendingIn = (
+  operations: Operations,
+): readonly (readonly [string, number])[] =>
+  Object.entries(operations)
+    .filter(([, { status }]) => status === 'pending')
+    .map(([id, { amount }]) => [id, amount] as const);
 
 // The decider rules these cases out, so each assertion fires only on a corrupt stream or a broken decider.
 export const evolve = (
